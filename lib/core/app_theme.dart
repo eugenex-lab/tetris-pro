@@ -29,6 +29,28 @@ class AppTheme {
     color: woodDark,
   );
 
+  static TextStyle get techTitleStyle => GoogleFonts.orbitron(
+    fontSize: 32,
+    fontWeight: FontWeight.w900,
+    color: Colors.redAccent,
+    letterSpacing: 4,
+    shadows: [
+      Shadow(color: Colors.redAccent.withValues(alpha: 0.8), blurRadius: 20),
+      const Shadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 4),
+    ],
+  );
+
+  static TextStyle get techMonoStyle => GoogleFonts.shareTechMono(
+    fontSize: 24,
+    color: const Color(0xFFFFD54F),
+    shadows: [
+      Shadow(
+        color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
+        blurRadius: 10,
+      ),
+    ],
+  );
+
   static ThemeData get themeData => ThemeData(
     brightness: Brightness.dark,
     scaffoldBackgroundColor: background,

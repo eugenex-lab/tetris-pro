@@ -413,42 +413,45 @@ class _GameScreenState extends State<GameScreen> {
     final int rows = shape.length;
     final int cols = shape[0].length;
 
-    return AspectRatio(
-      aspectRatio: cols / rows,
-      child: GridView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: cols,
-          childAspectRatio: 1,
-        ),
-        itemCount: rows * cols,
-        itemBuilder: (context, index) {
-          int r = index ~/ cols;
-          int c = index % cols;
+    const double cellSize = 12.0;
+    const double margin = 1.0;
 
-          if (shape[r][c] == 1) {
-            return Container(
-              margin: const EdgeInsets.all(1),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color.alphaBlend(
-                      Colors.white.withValues(alpha: 0.3),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(rows, (r) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(cols, (c) {
+            if (shape[r][c] == 1) {
+              return Container(
+                width: cellSize,
+                height: cellSize,
+                margin: const EdgeInsets.all(margin),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color.alphaBlend(
+                        Colors.white.withValues(alpha: 0.3),
+                        color,
+                      ),
                       color,
-                    ),
-                    color,
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              );
+            }
+            return const SizedBox(
+              width: cellSize + (margin * 2),
+              height: cellSize + (margin * 2),
             );
-          }
-          return const SizedBox();
-        },
-      ),
+          }),
+        );
+      }),
     );
   }
 
@@ -648,114 +651,105 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildGameOverOverlay(BuildContext context, GameProvider game) {
     return Container(
-      color: Colors.black87,
+      color: Colors.black.withValues(alpha: 0.85),
       child: Center(
-        child:
-            _MenuCard(
-                  title: "GAME OVER",
-                  titleColor: Colors.redAccent,
-                  children: [
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.black.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _buildGameOverStat(
-                                "SCORE",
-                                "${game.score}",
-                                true,
-                              ),
-                              const SizedBox(width: 30),
-                              _buildGameOverStat(
-                                "BEST",
-                                "${game.highScore}",
-                                false,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _buildGameOverStat(
-                                "LEVEL",
-                                "${game.level}",
-                                false,
-                              ),
-                              const SizedBox(width: 40),
-                              _buildGameOverStat(
-                                "LINES",
-                                "${game.linesClearedTotal}",
-                                false,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Watch Ad for Coins Banner
-                    _buildCoinAdBanner(context, game),
-                    const SizedBox(height: 24),
-                    Column(
-                      children: [
-                        _LargeMenuButton(
-                          label: "RESTART",
-                          icon: FontAwesomeIcons.rotateLeft,
-                          onPressed: () {
-                            context.read<AudioProvider>().playSoundEffect(
-                              SoundEffect.buttonClick,
-                            );
-                            AdManager.instance.showInterstitialAd(
-                              onAdClosed: () => game.restartGame(),
-                            );
-                          },
-                          color: AppTheme.woodLight,
-                        ),
-                        const SizedBox(height: 12),
-                        _LargeMenuButton(
-                          label: "HOME",
-                          icon: FontAwesomeIcons.house,
-                          onPressed: () {
-                            context.read<AudioProvider>().playSoundEffect(
-                              SoundEffect.buttonClick,
-                            );
-                            AdManager.instance.showInterstitialAd(
-                              onAdClosed: () => Navigator.pop(context),
-                            );
-                          },
-                          color: const Color(0xFF8D6E63),
-                        ),
-                      ],
-                    ),
-                  ],
-                )
-                .animate()
-                .scale(
-                  duration: 400.ms,
-                  curve: Curves.easeOutBack,
-                  begin: const Offset(0.5, 0.5),
-                )
-                .fadeIn(duration: 300.ms),
+        child: _MenuCard(
+          title: "GAME OVER",
+          titleColor: Colors.redAccent,
+          children: [
+            const SizedBox(height: 10),
+            // Main Score Highlight
+            _buildGameOverStat(
+              "FINAL SCORE",
+              "${game.score}",
+              true,
+            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
+
+            const SizedBox(height: 24),
+
+            // Stat Grid
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              ),
+              child: GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: 2,
+                childAspectRatio: 1.8,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildGameOverStat(
+                    "BEST",
+                    "${game.highScore}",
+                    false,
+                  ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2),
+                  _buildGameOverStat(
+                    "LEVEL",
+                    "${game.level}",
+                    false,
+                  ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.2),
+                  _buildGameOverStat(
+                    "LINES",
+                    "${game.linesClearedTotal}",
+                    false,
+                  ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.2),
+                  _buildGameOverStat(
+                    "COINS",
+                    "+${game.score ~/ 100}",
+                    false,
+                  ).animate().fadeIn(delay: 700.ms).slideX(begin: 0.2),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+            // Watch Ad for Coins Banner
+            _buildCoinAdBanner(context, game).animate().fadeIn(delay: 900.ms),
+
+            const SizedBox(height: 32),
+            Column(
+              children: [
+                _LargeMenuButton(
+                  label: "RESTART",
+                  icon: FontAwesomeIcons.rotateLeft,
+                  onPressed: () {
+                    context.read<AudioProvider>().playSoundEffect(
+                      SoundEffect.buttonClick,
+                    );
+                    AdManager.instance.showInterstitialAd(
+                      onAdClosed: () => game.restartGame(),
+                    );
+                  },
+                  color: AppTheme.woodLight,
+                ),
+                const SizedBox(height: 12),
+                _LargeMenuButton(
+                  label: "HOME",
+                  icon: FontAwesomeIcons.house,
+                  onPressed: () {
+                    context.read<AudioProvider>().playSoundEffect(
+                      SoundEffect.buttonClick,
+                    );
+                    AdManager.instance.showInterstitialAd(
+                      onAdClosed: () => Navigator.pop(context),
+                    );
+                  },
+                  color: const Color(0xFF8D6E63),
+                ),
+              ],
+            ).animate().fadeIn(delay: 1100.ms).slideY(begin: 0.1),
+          ],
+        ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
       ),
     );
   }
 
   Widget _buildGameOverStat(String label, String value, bool primary) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           label,
@@ -763,7 +757,7 @@ class _GameScreenState extends State<GameScreen> {
             fontSize: 10,
             fontWeight: FontWeight.w900,
             letterSpacing: 2,
-            color: const Color(0xFF5D4037).withValues(alpha: 0.6),
+            color: const Color(0xFF5D4037).withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 4),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tetris_pro/core/app_theme.dart';
 import 'package:tetris_pro/providers/game_provider.dart';
-import 'package:tetris_pro/providers/audio_provider.dart';
 import 'package:tetris_pro/screens/game_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:tetris_pro/screens/settings_screen.dart';
@@ -163,9 +162,6 @@ class HomeScreen extends StatelessWidget {
                 // Center Play Button
                 GestureDetector(
                   onTap: () {
-                    context.read<AudioProvider>().playSoundEffect(
-                      SoundEffect.buttonClick,
-                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const GameScreen()),
