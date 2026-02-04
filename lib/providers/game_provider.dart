@@ -16,6 +16,9 @@ class GameProvider with ChangeNotifier {
   Block? holdBlock;
   bool canHold = true;
 
+  // Audio callback
+  void Function(String)? onSoundTrigger;
+
   Block? get ghostBlock {
     if (currentBlock == null) return null;
 
@@ -134,6 +137,7 @@ class GameProvider with ChangeNotifier {
       currentBlock!.y = 0;
 
       if (!_isValidMove(currentBlock!)) {
+        onSoundTrigger?.call('gameOver');
         finalGameOver();
       }
     }
@@ -348,6 +352,7 @@ class GameProvider with ChangeNotifier {
     }
 
     if (linesCleared > 0) {
+      onSoundTrigger?.call('lineClear');
       linesClearedTotal += linesCleared;
 
       int points = 0;

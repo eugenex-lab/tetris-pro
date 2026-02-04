@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
-class AudioProvider extends ChangeNotifier {
+class AudioProvider with ChangeNotifier {
   final AudioPlayer _musicPlayer = AudioPlayer();
   final AudioPlayer _sfxPlayer = AudioPlayer();
 
@@ -47,15 +49,28 @@ class AudioProvider extends ChangeNotifier {
 
     try {
       if (_musicPlayer.state != PlayerState.playing) {
-        // Using a royalty-free 8-bit loop from a public source for demo purposes
-        await _musicPlayer.play(
-          UrlSource(
-            'https://opengameart.org/sites/default/files/Tetris%20Theme%20%28Chiptune%20Cover%29.mp3',
-          ),
+        await _musicPlayer.stop();
+
+        final source = await _getSource(
+          'music.mp3',
+          'https://raw.githubusercontent.com/rafael-p-andrade/Tetris/master/assets/audio/theme.mp3',
         );
+
+        await _musicPlayer.play(source);
       }
     } catch (e) {
       debugPrint('Error playing background music: $e');
+    }
+  }
+
+  // Helper to determine if we should use local asset or URL fallback
+  Future<Source> _getSource(String assetName, String urlFallback) async {
+    try {
+      // rootBundle.load expects the full path as defined in pubspec
+      await rootBundle.load('assets/audio/$assetName');
+      return AssetSource('audio/$assetName');
+    } catch (_) {
+      return UrlSource(urlFallback);
     }
   }
 
@@ -95,37 +110,41 @@ class AudioProvider extends ChangeNotifier {
     if (_isSfxMuted || !_isInitialized) return;
 
     try {
-      // NOTE: In a real app, ensure these assets exist in pubspec.yaml and assets/audio/ folder
-      // For now we use fallback logic or external URLs if local assets fail,
-      // but simplistic local asset calls are standard.
-      String assetPath;
+      String url;
+      String assetName;
+
       switch (effect) {
         case SoundEffect.drop:
-          // Short thud
-          assetPath = 'audio/drop.mp3';
+          assetName = 'drop.mp3';
+          url =
+              'https://raw.githubusercontent.com/rafael-p-andrade/Tetris/master/assets/audio/fall.mp3';
           break;
         case SoundEffect.lineClear:
-          // Success chime
-          assetPath = 'audio/line_clear.mp3';
+          assetName = 'line_clear.mp3';
+          url =
+              'https://raw.githubusercontent.com/frodosnow/Tetris-Remix/master/assets/audio/clear.mp3';
           break;
         case SoundEffect.gameOver:
-          // Sad fail sound
-          assetPath = 'audio/game_over.mp3';
+          assetName = 'game_over.mp3';
+          url =
+              'https://raw.githubusercontent.com/frodosnow/Tetris-Remix/master/assets/audio/gameover.mp3';
           break;
         case SoundEffect.rotate:
-          // Short tick
-          assetPath = 'audio/rotate.mp3';
+          assetName = 'rotate.mp3';
+          url =
+              'https://raw.githubusercontent.com/rafael-p-andrade/Tetris/master/assets/audio/rotate.mp3';
           break;
         case SoundEffect.buttonClick:
-          // UI click
-          assetPath = 'audio/click.mp3';
+          assetName = 'click.mp3';
+          url =
+              'https://raw.githubusercontent.com/rafael-p-andrade/Tetris/master/assets/audio/selection.mp3';
           break;
       }
 
-      // If you don't have local assets, this might throw or do nothing.
-      // Uncomment the line below when you have assets.
-      // await _sfxPlayer.play(AssetSource(assetPath));
-      debugPrint('Sound effect: $assetPath');
+      await _sfxPlayer.stop();
+      final source = await _getSource(assetName, url);
+      await _sfxPlayer.play(source);
+      debugPrint('Playing SFX: source type ${source.runtimeType}');
     } catch (e) {
       debugPrint('Error playing sound effect: $e');
     }

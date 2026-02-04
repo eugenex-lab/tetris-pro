@@ -21,7 +21,22 @@ class _GameScreenState extends State<GameScreen> {
     super.initState();
     // Start game after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GameProvider>().startGame();
+      final game = context.read<GameProvider>();
+      final audio = context.read<AudioProvider>();
+
+      // Wire up audio triggers
+      game.onSoundTrigger = (effectStr) {
+        SoundEffect? effect;
+        if (effectStr == 'lineClear') effect = SoundEffect.lineClear;
+        if (effectStr == 'gameOver') effect = SoundEffect.gameOver;
+        if (effectStr == 'drop') effect = SoundEffect.drop;
+
+        if (effect != null) {
+          audio.playSoundEffect(effect);
+        }
+      };
+
+      game.startGame();
     });
   }
 
@@ -39,12 +54,23 @@ class _GameScreenState extends State<GameScreen> {
                 _buildHUD(game),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => game.rotateBlock(),
+                    onTap: () {
+                      context.read<AudioProvider>().playSoundEffect(
+                        SoundEffect.rotate,
+                      );
+                      game.rotateBlock();
+                    },
                     onHorizontalDragUpdate: (details) {
                       // Sensitivity threshold
                       if (details.delta.dx > 15) {
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.rotate,
+                        ); // Using rotate sound for moves if specific move sound missing
                         game.moveRight();
                       } else if (details.delta.dx < -15) {
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.rotate,
+                        );
                         game.moveLeft();
                       }
                     },
@@ -57,6 +83,9 @@ class _GameScreenState extends State<GameScreen> {
                       // Hard drop on fast swipe down
                       if (details.primaryVelocity != null &&
                           details.primaryVelocity! > 1000) {
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.drop,
+                        );
                         game.dropBlock();
                       }
                     },
