@@ -50,6 +50,14 @@ class GameProvider with ChangeNotifier {
   int continuesRemaining = 3;
   int coins = 100;
   int linesClearedTotal = 0;
+  int _lastLevelUpLines = 0;
+
+  int get linesUntilNextLevel {
+    int linesNeeded = 10;
+    int progress = linesClearedTotal - _lastLevelUpLines;
+    int remaining = linesNeeded - progress;
+    return remaining > 0 ? remaining : 0;
+  }
 
   Timer? _timer;
   Duration _speed = const Duration(milliseconds: 800);
@@ -106,6 +114,7 @@ class GameProvider with ChangeNotifier {
     lives = 3;
     continuesRemaining = 3;
     linesClearedTotal = 0;
+    _lastLevelUpLines = 0;
     _speed = const Duration(milliseconds: 800);
     isGameOver = false;
     isPaused = false;
@@ -374,8 +383,10 @@ class GameProvider with ChangeNotifier {
 
       coins += linesCleared * 2;
 
-      if (linesClearedTotal % 10 == 0) {
+      // Level up logic: every 10 lines
+      if (linesClearedTotal - _lastLevelUpLines >= 10) {
         level++;
+        _lastLevelUpLines = (linesClearedTotal ~/ 10) * 10;
         int newSpeed = max(100, 800 - (level * 50));
         _speed = Duration(milliseconds: newSpeed);
         _startTimer();

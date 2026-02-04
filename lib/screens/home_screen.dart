@@ -129,7 +129,7 @@ class HomeScreen extends StatelessWidget {
 
                 // Stats Row
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -142,12 +142,23 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Transform.rotate(
+                          angle: 0.02,
+                          child: _buildStatBox(
+                            label: "TARGET",
+                            value: "${game.linesUntilNextLevel}",
+                            valueColor: const Color(0xFFEF6C00), // Orange
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Transform.rotate(
                           angle: 0.05,
                           child: _buildStatBox(
-                            label: "HIGH SCORE",
+                            label: "BEST",
                             value: "${game.highScore}",
                             valueColor: const Color(0xFFFFD54F), // Gold color
                           ),

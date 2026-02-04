@@ -173,13 +173,25 @@ class _GameScreenState extends State<GameScreen> {
                   "${game.score}",
                   CrossAxisAlignment.start,
                 ),
-                const SizedBox(height: 10),
-                _buildHUDStat(
-                  "BEST",
-                  "${game.highScore}",
-                  CrossAxisAlignment.start,
-                  fontSize: 14,
-                  labelSize: 8,
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildHUDStat(
+                      "LEVEL",
+                      "${game.level}",
+                      CrossAxisAlignment.start,
+                      fontSize: 14,
+                      labelSize: 8,
+                    ),
+                    const SizedBox(width: 15),
+                    _buildHUDStat(
+                      "TARGET",
+                      "${game.linesUntilNextLevel}",
+                      CrossAxisAlignment.start,
+                      fontSize: 14,
+                      labelSize: 8,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -190,17 +202,33 @@ class _GameScreenState extends State<GameScreen> {
 
           // Right: Coins & Pause
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 _buildHUDStat(
-                  "COINS",
-                  "${game.coins}",
+                  "BEST",
+                  "${game.highScore}",
                   CrossAxisAlignment.end,
-                  icon: FontAwesomeIcons.coins,
+                  fontSize: 14,
+                  labelSize: 8,
                 ),
-                const SizedBox(width: 12),
-                _buildPauseBtn(game),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _buildHUDStat(
+                      "COINS",
+                      "${game.coins}",
+                      CrossAxisAlignment.end,
+                      icon: FontAwesomeIcons.coins,
+                      fontSize: 14,
+                      labelSize: 8,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildPauseBtn(game),
+                  ],
+                ),
               ],
             ),
           ),
@@ -642,6 +670,23 @@ class _GameScreenState extends State<GameScreen> {
                               _buildGameOverStat(
                                 "BEST",
                                 "${game.highScore}",
+                                false,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildGameOverStat(
+                                "LEVEL",
+                                "${game.level}",
+                                false,
+                              ),
+                              const SizedBox(width: 40),
+                              _buildGameOverStat(
+                                "LINES",
+                                "${game.linesClearedTotal}",
                                 false,
                               ),
                             ],
