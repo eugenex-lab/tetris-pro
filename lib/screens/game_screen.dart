@@ -133,12 +133,26 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left: Score
+          // Left: Score & Best
           Expanded(
-            child: _buildHUDStat(
-              "SCORE",
-              "${game.score}",
-              CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildHUDStat(
+                  "SCORE",
+                  "${game.score}",
+                  CrossAxisAlignment.start,
+                ),
+                const SizedBox(height: 10),
+                _buildHUDStat(
+                  "BEST",
+                  "${game.highScore}",
+                  CrossAxisAlignment.start,
+                  fontSize: 14,
+                  labelSize: 8,
+                ),
+              ],
             ),
           ),
 
@@ -278,6 +292,8 @@ class _GameScreenState extends State<GameScreen> {
     String value,
     CrossAxisAlignment align, {
     IconData? icon,
+    double fontSize = 18,
+    double labelSize = 10,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -286,7 +302,7 @@ class _GameScreenState extends State<GameScreen> {
         Text(
           label,
           style: AppTheme.bodyStyle.copyWith(
-            fontSize: 10,
+            fontSize: labelSize,
             color: Colors.white54,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -302,12 +318,12 @@ class _GameScreenState extends State<GameScreen> {
             ],
             Text(
               value,
-              style: const TextStyle(
-                color: Color(0xFFFFD54F),
-                fontSize: 18,
+              style: TextStyle(
+                color: const Color(0xFFFFD54F),
+                fontSize: fontSize,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'monospace',
-                shadows: [
+                shadows: const [
                   Shadow(
                     color: Colors.black87,
                     blurRadius: 4,
@@ -571,81 +587,73 @@ class _GameScreenState extends State<GameScreen> {
                   titleColor: Colors.redAccent,
                   children: [
                     const SizedBox(height: 10),
-                    Text(
-                      "Score: ${game.score}",
-                      style: AppTheme.bodyStyle.copyWith(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.accent,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (game.coins >= 50)
-                          _LargeMenuButton(
-                            label: "REVIVE (50)",
-                            icon: FontAwesomeIcons.heartPulse,
-                            onPressed: () {
-                              context.read<AudioProvider>().playSoundEffect(
-                                SoundEffect.buttonClick,
-                              );
-                              game.revive();
-                            },
-                            color: Colors.redAccent.withValues(alpha: 0.8),
-                          )
-                        else
-                          Column(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              _LargeMenuButton(
-                                label: "WATCH AD",
-                                icon: FontAwesomeIcons.video,
-                                onPressed: () {
-                                  context.read<AudioProvider>().playSoundEffect(
-                                    SoundEffect.buttonClick,
-                                  );
-                                  AdManager.instance.showRewardedAd(
-                                    onRewarded: () => game.revive(),
-                                  );
-                                },
-                                color: Colors.green.withValues(alpha: 0.8),
+                              _buildGameOverStat(
+                                "SCORE",
+                                "${game.score}",
+                                true,
                               ),
-                              const SizedBox(height: 12),
-                              _LargeMenuButton(
-                                label: "RESTART",
-                                icon: FontAwesomeIcons.rotateLeft,
-                                onPressed: () {
-                                  context.read<AudioProvider>().playSoundEffect(
-                                    SoundEffect.buttonClick,
-                                  );
-                                  AdManager.instance.showInterstitialAd(
-                                    onAdClosed: () => game.restartGame(),
-                                  );
-                                },
-                                color: AppTheme.woodLight,
+                              const SizedBox(width: 30),
+                              _buildGameOverStat(
+                                "BEST",
+                                "${game.highScore}",
+                                false,
                               ),
                             ],
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {
-                        context.read<AudioProvider>().playSoundEffect(
-                          SoundEffect.buttonClick,
-                        );
-                        AdManager.instance.showInterstitialAd(
-                          onAdClosed: () => Navigator.pop(context),
-                        );
-                      },
-                      child: Text(
-                        "EXIT TO MENU",
-                        style: AppTheme.bodyStyle.copyWith(
-                          letterSpacing: 2,
-                          color: AppTheme.primary.withValues(alpha: 0.6),
-                        ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Watch Ad for Coins Banner
+                    _buildCoinAdBanner(context, game),
+                    const SizedBox(height: 24),
+                    Column(
+                      children: [
+                        _LargeMenuButton(
+                          label: "RESTART",
+                          icon: FontAwesomeIcons.rotateLeft,
+                          onPressed: () {
+                            context.read<AudioProvider>().playSoundEffect(
+                              SoundEffect.buttonClick,
+                            );
+                            AdManager.instance.showInterstitialAd(
+                              onAdClosed: () => game.restartGame(),
+                            );
+                          },
+                          color: AppTheme.woodLight,
+                        ),
+                        const SizedBox(height: 12),
+                        _LargeMenuButton(
+                          label: "HOME",
+                          icon: FontAwesomeIcons.house,
+                          onPressed: () {
+                            context.read<AudioProvider>().playSoundEffect(
+                              SoundEffect.buttonClick,
+                            );
+                            AdManager.instance.showInterstitialAd(
+                              onAdClosed: () => Navigator.pop(context),
+                            );
+                          },
+                          color: const Color(0xFF8D6E63),
+                        ),
+                      ],
                     ),
                   ],
                 )
@@ -656,6 +664,196 @@ class _GameScreenState extends State<GameScreen> {
                   begin: const Offset(0.5, 0.5),
                 )
                 .fadeIn(duration: 300.ms),
+      ),
+    );
+  }
+
+  Widget _buildGameOverStat(String label, String value, bool primary) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: AppTheme.bodyStyle.copyWith(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+            color: const Color(0xFF5D4037).withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: AppTheme.titleStyle.copyWith(
+            fontSize: primary ? 42 : 32,
+            color: const Color(0xFF3E2723),
+            height: 1.1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCoinAdBanner(BuildContext context, GameProvider game) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFFFD700), // Gold
+            const Color(0xFFFFA000), // Amber
+            const Color(0xFFFF8F00), // Dark Amber
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF6F00).withValues(alpha: 0.5),
+            offset: const Offset(0, 8),
+            blurRadius: 20,
+            spreadRadius: -5,
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.4),
+            offset: const Offset(0, 2),
+            blurRadius: 0,
+            spreadRadius: 1, // Inner highlight look via border
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            context.read<AudioProvider>().playSoundEffect(
+              SoundEffect.buttonClick,
+            );
+            AdManager.instance.showRewardedAd(
+              onRewarded: () => game.addRewardCoins(20),
+            );
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                // Animated Coin Icon
+                Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        FontAwesomeIcons.coins,
+                        color: Color(0xFFFF8F00),
+                        size: 28,
+                      ),
+                    )
+                    .animate(
+                      onPlay: (controller) => controller.repeat(reverse: true),
+                    )
+                    .scale(
+                      duration: 1000.ms,
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.1, 1.1),
+                      curve: Curves.easeInOut,
+                    )
+                    .shimmer(
+                      delay: 2000.ms,
+                      duration: 1000.ms,
+                      color: Colors.white,
+                    ),
+
+                const SizedBox(width: 16),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "FREE COINS!",
+                        style: AppTheme.titleStyle.copyWith(
+                          fontSize: 15,
+                          color: const Color(0xFF3E2723),
+                          fontWeight: FontWeight.w900,
+                          shadows: [], // Remove default shadows for clean look
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            "+20",
+                            style: AppTheme.bodyStyle.copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFD84315),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              "Coins",
+                              style: AppTheme.bodyStyle.copyWith(
+                                fontSize: 11,
+                                color: const Color(0xFF3E2723),
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Action Button
+                Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3E2723),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        "GET +20",
+                        style: TextStyle(
+                          color: Color(0xFFFFD54F),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    )
+                    .animate(onPlay: (controller) => controller.repeat())
+                    .shimmer(
+                      delay: 3000.ms,
+                      duration: 1500.ms,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -675,7 +873,7 @@ class _MenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 300,
+      width: 320,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
         color: const Color(0xFFE7DCC9), // Textured light wood color

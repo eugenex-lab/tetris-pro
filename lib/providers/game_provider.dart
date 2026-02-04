@@ -134,24 +134,14 @@ class GameProvider with ChangeNotifier {
       currentBlock!.y = 0;
 
       if (!_isValidMove(currentBlock!)) {
-        // Check if player has continues remaining
-        if (continuesRemaining > 0) {
-          pauseForContinue();
-        } else {
-          finalGameOver();
-        }
+        finalGameOver();
       }
     }
     notifyListeners();
   }
 
   void gameOver() {
-    // Legacy method - redirect to proper flow
-    if (continuesRemaining > 0) {
-      pauseForContinue();
-    } else {
-      finalGameOver();
-    }
+    finalGameOver();
   }
 
   // Called when player fails but has continues left
@@ -201,6 +191,13 @@ class GameProvider with ChangeNotifier {
       continueGame();
       _saveData();
     }
+  }
+
+  // Called when player watches an ad to earn coins
+  void addRewardCoins(int amount) {
+    coins += amount;
+    _saveData();
+    notifyListeners();
   }
 
   void _startTimer() {
