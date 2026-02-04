@@ -5,7 +5,6 @@ import 'package:tetris_pro/providers/game_provider.dart';
 import 'package:tetris_pro/providers/audio_provider.dart';
 import 'package:tetris_pro/services/ad_manager.dart';
 import 'package:tetris_pro/widgets/game_board.dart';
-import 'package:tetris_pro/widgets/mini_block_display.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -39,30 +38,44 @@ class _GameScreenState extends State<GameScreen> {
               children: [
                 _buildHUD(game),
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Expanded(child: GameBoard()),
-                        const SizedBox(width: 10),
-                        Column(
-                          children: [
-                            MiniBlockDisplay(
-                              block: game.nextBlock,
-                              label: "NEXT",
-                            ),
-                          ],
+                  child: GestureDetector(
+                    onTap: () => game.rotateBlock(),
+                    onHorizontalDragUpdate: (details) {
+                      // Sensitivity threshold
+                      if (details.delta.dx > 15) {
+                        game.moveRight();
+                      } else if (details.delta.dx < -15) {
+                        game.moveLeft();
+                      }
+                    },
+                    onVerticalDragUpdate: (details) {
+                      if (details.delta.dy > 10) {
+                        game.moveDown();
+                      }
+                    },
+                    onVerticalDragEnd: (details) {
+                      // Hard drop on fast swipe down
+                      if (details.primaryVelocity != null &&
+                          details.primaryVelocity! > 1000) {
+                        game.dropBlock();
+                      }
+                    },
+                    child: Container(
+                      color: Colors.transparent, // Capture taps
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width,
+                            height: MediaQuery.of(context).size.width * 2,
+                            child: GameBoard(),
+                          ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-                _buildControls(context, game),
-                const SizedBox(height: 10),
                 // Banner Ad
                 AdManager.instance.getBannerWidget() ??
                     Container(
@@ -79,15 +92,11 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
 
-          // Continue Dialog (shows before game over when continues remain)
+          // Dialogs
           if (game.showContinueDialog && !game.isGameOver)
             _buildContinueDialog(context, game),
-
-          // Pause Overlay (only when paused, not during continue dialog)
           if (game.isPaused && !game.showContinueDialog && !game.isGameOver)
             _buildPauseOverlay(context, game),
-
-          // Game Over Overlay (only when truly game over, no continues left)
           if (game.isGameOver) _buildGameOverOverlay(context, game),
         ],
       ),
@@ -96,143 +105,261 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildHUD(GameProvider game) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
       decoration: BoxDecoration(
-        color: AppTheme.woodDark.withValues(alpha: 0.9),
-        border: Border(bottom: BorderSide(color: AppTheme.woodLight, width: 2)),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF2D2620), // Dark warm wood
+            const Color(0xFF140D09), // Almost black
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.6),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+        border: Border(
+          bottom: BorderSide(
+            color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
+            width: 1.5,
+          ),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Score
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "SCORE",
-                style: AppTheme.bodyStyle.copyWith(
-                  fontSize: 12,
-                  color: Colors.white54,
-                ),
-              ),
-              Text(
-                "${game.score}",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          // Level
-          Column(
-            children: [
-              Text(
-                "LEVEL",
-                style: AppTheme.bodyStyle.copyWith(
-                  fontSize: 12,
-                  color: Colors.white54,
-                ),
-              ),
-              Text(
-                "${game.level}",
-                style: const TextStyle(
-                  color: AppTheme.accent,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          // Coins
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                "COINS",
-                style: AppTheme.bodyStyle.copyWith(
-                  fontSize: 12,
-                  color: Colors.white54,
-                ),
-              ),
-              Row(
-                children: [
-                  const Icon(
-                    FontAwesomeIcons.coins,
-                    color: AppTheme.accent,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    "${game.coins}",
-                    style: const TextStyle(
-                      color: AppTheme.accent,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          IconButton(
-            icon: Icon(
-              game.isPaused ? Icons.play_arrow : Icons.pause,
-              color: AppTheme.primary,
+          // Left: Score
+          Expanded(
+            child: _buildHUDStat(
+              "SCORE",
+              "${game.score}",
+              CrossAxisAlignment.start,
             ),
-            onPressed: () => game.pauseGame(),
+          ),
+
+          // Center: NEXT PIECE (Hero Element)
+          _buildNextDisplay(game.nextBlock),
+
+          // Right: Coins & Pause
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _buildHUDStat(
+                  "COINS",
+                  "${game.coins}",
+                  CrossAxisAlignment.end,
+                  icon: FontAwesomeIcons.coins,
+                ),
+                const SizedBox(width: 12),
+                _buildPauseBtn(game),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildControls(BuildContext context, GameProvider game) {
+  Widget _buildNextDisplay(dynamic block) {
     return Container(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        children: [
-          // Row 1: Rotation, etc.
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ctrlBtn(
-                icon: FontAwesomeIcons.rotate,
-                onTap: game.rotateBlock,
-                size: 60,
-              ),
-              _ctrlBtn(
-                icon: FontAwesomeIcons.arrowDown,
-                onTap: game.dropBlock,
-                size: 60,
-                color: Colors.amber[900],
-              ),
-            ],
+      width: 120,
+      height: 90,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFFFFB74D), // Gold border
+          width: 3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFB74D).withValues(alpha: 0.25),
+            blurRadius: 15,
+            spreadRadius: 2,
           ),
-          const SizedBox(height: 10),
-          // Row 2: Movement
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ctrlBtn(
-                icon: FontAwesomeIcons.arrowLeft,
-                onTap: game.moveLeft,
-                size: 70,
-              ),
-              _ctrlBtn(
-                icon: FontAwesomeIcons.chevronDown,
-                onTap: game.moveDown,
-                size: 70,
-              ),
-              _ctrlBtn(
-                icon: FontAwesomeIcons.arrowRight,
-                onTap: game.moveRight,
-                size: 70,
-              ),
-            ],
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.8),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
         ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF3E2723), // Dark wood
+            const Color(0xFF151515), // Black
+          ],
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.black38,
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(12),
+              ),
+            ),
+            child: const Text(
+              "NEXT",
+              style: TextStyle(
+                color: Color(0xFFFFD54F),
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: SizedBox(
+                height: 40,
+                width: 60,
+                child: block == null
+                    ? const Center(
+                        child: Text(
+                          "...",
+                          style: TextStyle(color: Colors.white24),
+                        ),
+                      )
+                    : _renderMiniBlock(block),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPauseBtn(GameProvider game) {
+    return GestureDetector(
+      onTap: () => game.pauseGame(),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: const Color(0xFF3E2723).withValues(alpha: 0.8),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          game.isPaused ? Icons.play_arrow : Icons.pause,
+          color: const Color(0xFFFFD54F),
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHUDStat(
+    String label,
+    String value,
+    CrossAxisAlignment align, {
+    IconData? icon,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: align,
+      children: [
+        Text(
+          label,
+          style: AppTheme.bodyStyle.copyWith(
+            fontSize: 10,
+            color: Colors.white54,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: AppTheme.accent, size: 14),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              value,
+              style: const TextStyle(
+                color: Color(0xFFFFD54F),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'monospace',
+                shadows: [
+                  Shadow(
+                    color: Colors.black87,
+                    blurRadius: 4,
+                    offset: Offset(1, 1),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _renderMiniBlock(dynamic block) {
+    final List<List<int>> shape = block.shape;
+    final Color color = block.color;
+    final int rows = shape.length;
+    final int cols = shape[0].length;
+
+    return AspectRatio(
+      aspectRatio: cols / rows,
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: cols,
+          childAspectRatio: 1,
+        ),
+        itemCount: rows * cols,
+        itemBuilder: (context, index) {
+          int r = index ~/ cols;
+          int c = index % cols;
+
+          if (shape[r][c] == 1) {
+            return Container(
+              margin: const EdgeInsets.all(1),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.alphaBlend(
+                      Colors.white.withValues(alpha: 0.3),
+                      color,
+                    ),
+                    color,
+                  ],
+                ),
+              ),
+            );
+          }
+          return const SizedBox();
+        },
       ),
     );
   }
@@ -472,38 +599,6 @@ class _GameScreenState extends State<GameScreen> {
                   begin: const Offset(0.5, 0.5),
                 )
                 .fadeIn(duration: 300.ms),
-      ),
-    );
-  }
-
-  Widget _ctrlBtn({
-    required IconData icon,
-    required VoidCallback onTap,
-    double size = 50,
-    Color? color,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: color ?? AppTheme.woodLight,
-          shape: BoxShape.circle,
-          boxShadow: [
-            const BoxShadow(
-              color: Colors.black45,
-              offset: Offset(2, 3),
-              blurRadius: 4,
-            ),
-            BoxShadow(
-              color: (color ?? AppTheme.woodLight).withValues(alpha: 0.5),
-              offset: const Offset(-1, -1),
-              blurRadius: 2,
-            ),
-          ],
-        ),
-        child: Icon(icon, color: AppTheme.woodDark, size: size * 0.5),
       ),
     );
   }

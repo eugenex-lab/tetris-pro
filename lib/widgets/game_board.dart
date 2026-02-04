@@ -51,6 +51,22 @@ class GameBoard extends StatelessWidget {
                   }
                 }
 
+                // Check ghost block (only if no solid block there)
+                bool isGhost = false;
+                if (color == null && game.ghostBlock != null) {
+                  int bx = c - game.ghostBlock!.x;
+                  int by = r - game.ghostBlock!.y;
+
+                  if (by >= 0 &&
+                      by < game.ghostBlock!.shape.length &&
+                      bx >= 0 &&
+                      bx < game.ghostBlock!.shape[by].length &&
+                      game.ghostBlock!.shape[by][bx] == 1) {
+                    color = game.ghostBlock!.color.withValues(alpha: 0.3);
+                    isGhost = true;
+                  }
+                }
+
                 if (color == null) {
                   return Container(
                     decoration: BoxDecoration(
@@ -62,6 +78,22 @@ class GameBoard extends StatelessWidget {
                   );
                 }
 
+                // Render Ghost Block (faint outline)
+                if (isGhost) {
+                  return Container(
+                    margin: const EdgeInsets.all(1),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: color!.withValues(alpha: 0.5),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(2),
+                      color: color.withValues(alpha: 0.1), // Slight fill
+                    ),
+                  );
+                }
+
+                // Render Solid Block
                 return Container(
                   margin: const EdgeInsets.all(1),
                   decoration: BoxDecoration(
@@ -78,10 +110,9 @@ class GameBoard extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        // Simple lighten/darken without deprecated .red
                         Color.alphaBlend(
                           Colors.white.withValues(alpha: 0.2),
-                          color,
+                          color!,
                         ),
                         color,
                       ],

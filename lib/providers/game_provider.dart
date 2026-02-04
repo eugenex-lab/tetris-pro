@@ -16,6 +16,27 @@ class GameProvider with ChangeNotifier {
   Block? holdBlock;
   bool canHold = true;
 
+  Block? get ghostBlock {
+    if (currentBlock == null) return null;
+
+    // Clone current block
+    Block ghost = Block(
+      shape: currentBlock!.shape,
+      color: currentBlock!.color,
+      type: currentBlock!.type,
+      x: currentBlock!.x,
+      y: currentBlock!.y,
+    );
+
+    // Drop it to the bottom
+    while (_isValidMove(ghost)) {
+      ghost.y += 1;
+    }
+    ghost.y -= 1; // Step back to valid position
+
+    return ghost;
+  }
+
   bool isGameOver = false;
   bool isPaused = false;
   bool showContinueDialog = false;
