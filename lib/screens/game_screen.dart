@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tetris_pro/core/app_theme.dart';
 import 'package:tetris_pro/providers/game_provider.dart';
@@ -27,9 +28,15 @@ class _GameScreenState extends State<GameScreen> {
       // Wire up audio triggers
       game.onSoundTrigger = (effectStr) {
         SoundEffect? effect;
-        if (effectStr == 'lineClear') effect = SoundEffect.lineClear;
+        if (effectStr == 'lineClear') {
+          effect = SoundEffect.lineClear;
+          if (game.hapticsEnabled) HapticFeedback.heavyImpact();
+        }
         if (effectStr == 'gameOver') effect = SoundEffect.gameOver;
-        if (effectStr == 'drop') effect = SoundEffect.drop;
+        if (effectStr == 'drop') {
+          effect = SoundEffect.drop;
+          if (game.hapticsEnabled) HapticFeedback.mediumImpact();
+        }
 
         if (effect != null) {
           audio.playSoundEffect(effect);
@@ -58,6 +65,7 @@ class _GameScreenState extends State<GameScreen> {
                       context.read<AudioProvider>().playSoundEffect(
                         SoundEffect.rotate,
                       );
+                      if (game.hapticsEnabled) HapticFeedback.selectionClick();
                       game.rotateBlock();
                     },
                     onHorizontalDragUpdate: (details) {
@@ -66,11 +74,15 @@ class _GameScreenState extends State<GameScreen> {
                         context.read<AudioProvider>().playSoundEffect(
                           SoundEffect.rotate,
                         ); // Using rotate sound for moves if specific move sound missing
+                        if (game.hapticsEnabled)
+                          HapticFeedback.selectionClick();
                         game.moveRight();
                       } else if (details.delta.dx < -15) {
                         context.read<AudioProvider>().playSoundEffect(
                           SoundEffect.rotate,
                         );
+                        if (game.hapticsEnabled)
+                          HapticFeedback.selectionClick();
                         game.moveLeft();
                       }
                     },

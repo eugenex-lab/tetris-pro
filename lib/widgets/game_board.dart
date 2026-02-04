@@ -51,9 +51,11 @@ class GameBoard extends StatelessWidget {
                   }
                 }
 
-                // Check ghost block (only if no solid block there)
+                // Check ghost block (only if no solid block there and feature is enabled)
                 bool isGhost = false;
-                if (color == null && game.ghostBlock != null) {
+                if (color == null &&
+                    game.showGhostPiece &&
+                    game.ghostBlock != null) {
                   int bx = c - game.ghostBlock!.x;
                   int by = r - game.ghostBlock!.y;
 

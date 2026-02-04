@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tetris_pro/core/app_theme.dart';
 import 'package:tetris_pro/providers/game_provider.dart';
+import 'package:tetris_pro/providers/audio_provider.dart';
 import 'package:tetris_pro/screens/game_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:tetris_pro/screens/settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -49,14 +51,12 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Coins
+                      // Restored Yellow Coin Button
                       _buildTopPill(
-                        icon:
-                            FontAwesomeIcons.solidCircle, // Coin approximation
+                        icon: FontAwesomeIcons.coins,
                         color: const Color(0xFFFFD54F),
                         text: "${game.coins}",
-                        isCoin:
-                            true, // Special styling for custom coin icon if needed
+                        isCoin: true,
                       ),
                       // Settings
                       Container(
@@ -70,9 +70,10 @@ class HomeScreen extends StatelessWidget {
                             color: Color(0xFFD7CCC8),
                           ),
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Settings coming soon!"),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsScreen(),
                               ),
                             );
                           },
@@ -129,7 +130,7 @@ class HomeScreen extends StatelessWidget {
 
                 // Stats Row
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -142,18 +143,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Transform.rotate(
-                          angle: 0.02,
-                          child: _buildStatBox(
-                            label: "TARGET",
-                            value: "${game.linesUntilNextLevel}",
-                            valueColor: const Color(0xFFEF6C00), // Orange
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 24),
                       Expanded(
                         child: Transform.rotate(
                           angle: 0.05,
@@ -173,6 +163,9 @@ class HomeScreen extends StatelessWidget {
                 // Center Play Button
                 GestureDetector(
                   onTap: () {
+                    context.read<AudioProvider>().playSoundEffect(
+                      SoundEffect.buttonClick,
+                    );
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const GameScreen()),
@@ -280,21 +273,32 @@ class HomeScreen extends StatelessWidget {
     bool isCoin = false,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF4E342E),
+        color: const Color(0xFFFFD54F), // Premium Yellow
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFE8B000), // Darker yellow stroke
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            offset: const Offset(0, 4),
+            blurRadius: 8,
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 16),
+          Icon(icon, color: const Color(0xFF3E2723), size: 16),
           const SizedBox(width: 8),
           Text(
             text,
             style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2723),
+              fontWeight: FontWeight.w900,
               fontSize: 14,
             ),
           ),
