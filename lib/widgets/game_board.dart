@@ -84,7 +84,7 @@ class GameBoard extends StatelessWidget {
                     margin: const EdgeInsets.all(1),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: color!.withValues(alpha: 0.5),
+                        color: color.withValues(alpha: 0.5),
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(2),
@@ -112,7 +112,7 @@ class GameBoard extends StatelessWidget {
                       colors: [
                         Color.alphaBlend(
                           Colors.white.withValues(alpha: 0.2),
-                          color!,
+                          color,
                         ),
                         color,
                       ],

@@ -245,7 +245,10 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildPauseBtn(GameProvider game) {
     return GestureDetector(
-      onTap: () => game.pauseGame(),
+      onTap: () {
+        context.read<AudioProvider>().playSoundEffect(SoundEffect.buttonClick);
+        game.pauseGame();
+      },
       child: Container(
         width: 44,
         height: 44,
@@ -376,21 +379,47 @@ class _GameScreenState extends State<GameScreen> {
                     _LargeMenuButton(
                       label: "RESUME",
                       icon: FontAwesomeIcons.play,
-                      onPressed: () => game.pauseGame(),
+                      onPressed: () {
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.buttonClick,
+                        );
+                        game.pauseGame();
+                      },
                       color: AppTheme.woodLight,
                     ),
                     const SizedBox(height: 12),
                     Consumer<AudioProvider>(
                       builder: (context, audio, _) {
-                        return _LargeMenuButton(
-                          label: audio.isMuted ? "SOUND: OFF" : "SOUND: ON",
-                          icon: audio.isMuted
-                              ? FontAwesomeIcons.volumeXmark
-                              : FontAwesomeIcons.volumeHigh,
-                          onPressed: () => audio.toggleMute(),
-                          color: audio.isMuted
-                              ? Colors.grey.withValues(alpha: 0.7)
-                              : Colors.green.withValues(alpha: 0.8),
+                        return Column(
+                          children: [
+                            _LargeMenuButton(
+                              label: audio.isMusicMuted
+                                  ? "MUSIC: OFF"
+                                  : "MUSIC: ON",
+                              icon: FontAwesomeIcons.music,
+                              onPressed: () {
+                                audio.playSoundEffect(SoundEffect.buttonClick);
+                                audio.toggleMusic();
+                              },
+                              color: audio.isMusicMuted
+                                  ? Colors.grey.withValues(alpha: 0.7)
+                                  : Colors.deepPurple.withValues(alpha: 0.8),
+                            ),
+                            const SizedBox(height: 12),
+                            _LargeMenuButton(
+                              label: audio.isSfxMuted ? "SFX: OFF" : "SFX: ON",
+                              icon: audio.isSfxMuted
+                                  ? FontAwesomeIcons.volumeXmark
+                                  : FontAwesomeIcons.volumeHigh,
+                              onPressed: () {
+                                audio.playSoundEffect(SoundEffect.buttonClick);
+                                audio.toggleSfx();
+                              },
+                              color: audio.isSfxMuted
+                                  ? Colors.grey.withValues(alpha: 0.7)
+                                  : Colors.teal.withValues(alpha: 0.8),
+                            ),
+                          ],
                         );
                       },
                     ),
@@ -402,6 +431,9 @@ class _GameScreenState extends State<GameScreen> {
                           label: "RESTART",
                           icon: FontAwesomeIcons.rotateLeft,
                           onPressed: () {
+                            context.read<AudioProvider>().playSoundEffect(
+                              SoundEffect.buttonClick,
+                            );
                             AdManager.instance.showInterstitialAd(
                               onAdClosed: () => game.restartGame(),
                             );
@@ -412,6 +444,9 @@ class _GameScreenState extends State<GameScreen> {
                           label: "MENU",
                           icon: FontAwesomeIcons.house,
                           onPressed: () {
+                            context.read<AudioProvider>().playSoundEffect(
+                              SoundEffect.buttonClick,
+                            );
                             AdManager.instance.showInterstitialAd(
                               onAdClosed: () => Navigator.pop(context),
                             );
@@ -472,6 +507,9 @@ class _GameScreenState extends State<GameScreen> {
                       label: "WATCH AD",
                       icon: FontAwesomeIcons.video,
                       onPressed: () {
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.buttonClick,
+                        );
                         AdManager.instance.showRewardedAd(
                           onRewarded: () {
                             game.continueGame();
@@ -496,7 +534,12 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                     const SizedBox(height: 16),
                     TextButton(
-                      onPressed: () => game.finalGameOver(),
+                      onPressed: () {
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.buttonClick,
+                        );
+                        game.finalGameOver();
+                      },
                       child: Text(
                         "GIVE UP",
                         style: AppTheme.bodyStyle.copyWith(
@@ -544,7 +587,12 @@ class _GameScreenState extends State<GameScreen> {
                           _LargeMenuButton(
                             label: "REVIVE (50)",
                             icon: FontAwesomeIcons.heartPulse,
-                            onPressed: () => game.revive(),
+                            onPressed: () {
+                              context.read<AudioProvider>().playSoundEffect(
+                                SoundEffect.buttonClick,
+                              );
+                              game.revive();
+                            },
                             color: Colors.redAccent.withValues(alpha: 0.8),
                           )
                         else
@@ -554,6 +602,9 @@ class _GameScreenState extends State<GameScreen> {
                                 label: "WATCH AD",
                                 icon: FontAwesomeIcons.video,
                                 onPressed: () {
+                                  context.read<AudioProvider>().playSoundEffect(
+                                    SoundEffect.buttonClick,
+                                  );
                                   AdManager.instance.showRewardedAd(
                                     onRewarded: () => game.revive(),
                                   );
@@ -565,6 +616,9 @@ class _GameScreenState extends State<GameScreen> {
                                 label: "RESTART",
                                 icon: FontAwesomeIcons.rotateLeft,
                                 onPressed: () {
+                                  context.read<AudioProvider>().playSoundEffect(
+                                    SoundEffect.buttonClick,
+                                  );
                                   AdManager.instance.showInterstitialAd(
                                     onAdClosed: () => game.restartGame(),
                                   );
@@ -578,6 +632,9 @@ class _GameScreenState extends State<GameScreen> {
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () {
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.buttonClick,
+                        );
                         AdManager.instance.showInterstitialAd(
                           onAdClosed: () => Navigator.pop(context),
                         );
