@@ -18,10 +18,12 @@ class GameProvider with ChangeNotifier {
 
   bool isGameOver = false;
   bool isPaused = false;
+  bool showContinueDialog = false;
   int score = 0;
   int highScore = 0;
   int level = 1;
   int lives = 3;
+  int continuesRemaining = 3;
   int coins = 100;
   int linesClearedTotal = 0;
 
@@ -78,10 +80,12 @@ class GameProvider with ChangeNotifier {
     score = 0;
     level = 1;
     lives = 3;
+    continuesRemaining = 3;
     linesClearedTotal = 0;
     _speed = const Duration(milliseconds: 800);
     isGameOver = false;
     isPaused = false;
+    showContinueDialog = false;
     currentBlock = null;
     holdBlock = null;
     canHold = true;
@@ -109,33 +113,72 @@ class GameProvider with ChangeNotifier {
       currentBlock!.y = 0;
 
       if (!_isValidMove(currentBlock!)) {
-        gameOver();
+        // Check if player has continues remaining
+        if (continuesRemaining > 0) {
+          pauseForContinue();
+        } else {
+          finalGameOver();
+        }
       }
     }
     notifyListeners();
   }
 
   void gameOver() {
+    // Legacy method - redirect to proper flow
+    if (continuesRemaining > 0) {
+      pauseForContinue();
+    } else {
+      finalGameOver();
+    }
+  }
+
+  // Called when player fails but has continues left
+  void pauseForContinue() {
+    showContinueDialog = true;
+    isPaused = true;
+    _timer?.cancel();
+    notifyListeners();
+  }
+
+  // Called after rewarded ad completes
+  void continueGame() {
+    if (continuesRemaining > 0) {
+      continuesRemaining--;
+      showContinueDialog = false;
+
+      // Clear bottom 5 rows for breathing room
+      for (
+        int r = AppConstants.gridRows - 1;
+        r >= AppConstants.gridRows - 5;
+        r--
+      ) {
+        grid[r] = List.filled(AppConstants.gridColumns, null);
+      }
+
+      isPaused = false;
+      _spawnBlock();
+      _startTimer();
+      notifyListeners();
+    }
+  }
+
+  // Called when player gives up or runs out of continues
+  void finalGameOver() {
     isGameOver = true;
+    showContinueDialog = false;
+    continuesRemaining = 0;
     _timer?.cancel();
     _saveData();
     notifyListeners();
   }
 
+  // Legacy revive method for coin-based revive (keep for backwards compatibility)
   void revive() {
     if (coins >= 50) {
       coins -= 50;
-      // Strategy: Clear bottom 10 lines to ensure survival
-      grid = List.generate(
-        AppConstants.gridRows,
-        (_) => List.filled(AppConstants.gridColumns, null),
-      );
-
-      isGameOver = false;
-      _spawnBlock();
-      _startTimer();
-      _saveData(); // Save spent coins
-      notifyListeners();
+      continueGame();
+      _saveData();
     }
   }
 
