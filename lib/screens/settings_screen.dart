@@ -1,3 +1,4 @@
+// File: lib/screens/settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -16,15 +17,11 @@ class SettingsScreen extends StatelessWidget {
           color: Color(0xFFE6D4B2), // Matches Light Wood Background
         ),
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFFE8DABA),
-                const Color(0xFFDCC6A0),
-                const Color(0xFFE8DABA),
-              ],
+              colors: [Color(0xFFE8DABA), Color(0xFFDCC6A0), Color(0xFFE8DABA)],
             ),
           ),
           child: SafeArea(
@@ -107,9 +104,16 @@ class SettingsScreen extends StatelessWidget {
                           label: "RESET PROGRESS",
                           icon: FontAwesomeIcons.trashCan,
                           onPressed: () => _showResetConfirmation(context),
-                          color: Colors.red.withValues(alpha: 0.7),
+                          color: Colors.red.withOpacity(0.7),
                         ),
 
+                        const SizedBox(height: 16),
+                        _LargeButton(
+                          label: "CLOSE",
+                          icon: FontAwesomeIcons.xmark,
+                          onPressed: () => Navigator.pop(context),
+                          color: const Color(0xFF5D4037),
+                        ),
                         const SizedBox(height: 16),
                         const Text(
                           "v 1.0.0",
@@ -137,7 +141,7 @@ class SettingsScreen extends StatelessWidget {
       child: Text(
         title,
         style: TextStyle(
-          color: const Color(0xFF5D4037).withValues(alpha: 0.8),
+          color: const Color(0xFF5D4037).withOpacity(0.8),
           fontSize: 11,
           fontWeight: FontWeight.w900,
           letterSpacing: 2,
@@ -219,7 +223,7 @@ class _SettingsCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFC4B59D), width: 3),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: Colors.black.withOpacity(0.3),
             offset: const Offset(0, 10),
             blurRadius: 20,
           ),
@@ -261,7 +265,7 @@ class _SettingsToggle extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.05),
+        color: Colors.black.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -313,7 +317,7 @@ class _LargeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: Colors.black.withOpacity(0.2),
               offset: const Offset(0, 4),
               blurRadius: 4,
             ),

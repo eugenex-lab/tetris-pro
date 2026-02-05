@@ -177,10 +177,10 @@ class GameProvider with ChangeNotifier {
       continuesRemaining--;
       showContinueDialog = false;
 
-      // Clear bottom 5 rows for breathing room
+      // Clear bottom 4 rows for breathing room
       for (
         int r = AppConstants.gridRows - 1;
-        r >= AppConstants.gridRows - 5;
+        r >= AppConstants.gridRows - 4;
         r--
       ) {
         grid[r] = List.filled(AppConstants.gridColumns, null);

@@ -118,17 +118,7 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
                 // Banner Ad
-                AdManager.instance.getBannerWidget() ??
-                    Container(
-                      height: 50,
-                      color: Colors.black12,
-                      child: const Center(
-                        child: Text(
-                          "Ad Loading...",
-                          style: TextStyle(color: Colors.white24),
-                        ),
-                      ),
-                    ),
+                AdManager.instance.buildBannerWidget(AdBannerType.game),
               ],
             ),
           ),

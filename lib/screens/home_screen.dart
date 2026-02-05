@@ -5,6 +5,7 @@ import 'package:tetris_pro/providers/game_provider.dart';
 import 'package:tetris_pro/screens/game_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:tetris_pro/screens/settings_screen.dart';
+import 'package:tetris_pro/services/ad_manager.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -254,6 +255,9 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
+                // Banner Ad
+                AdManager.instance.buildBannerWidget(AdBannerType.home),
+                const SizedBox(height: 4),
               ],
             ),
           ),
