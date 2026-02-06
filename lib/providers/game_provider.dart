@@ -18,6 +18,9 @@ class GameProvider with ChangeNotifier {
 
   // Audio callback
   void Function(String)? onSoundTrigger;
+  // Animation callbacks
+  void Function(int linesCleared, int coinsEarned)? onLineClear;
+  void Function()? onLevelStart;
 
   Block? get ghostBlock {
     if (currentBlock == null) return null;
@@ -43,16 +46,19 @@ class GameProvider with ChangeNotifier {
   bool isGameOver = false;
   bool isPaused = false;
   bool showContinueDialog = false;
+  bool showSuccessModal = false;
   int score = 0;
   int highScore = 0;
   int level = 1;
   int lives = 3;
   int continuesRemaining = 3;
   int coins = 100;
+  int levelCoins = 0; // Coins earned in current level
   int linesClearedTotal = 0;
   int _lastLevelUpLines = 0;
   bool showGhostPiece = true;
   bool hapticsEnabled = true;
+  bool isNewHighScore = false;
 
   int get linesUntilNextLevel {
     int linesNeeded = 10;
@@ -121,10 +127,13 @@ class GameProvider with ChangeNotifier {
     continuesRemaining = 3;
     linesClearedTotal = 0;
     _lastLevelUpLines = 0;
+    levelCoins = 0;
+    isNewHighScore = false;
     _speed = const Duration(milliseconds: 800);
     isGameOver = false;
     isPaused = false;
     showContinueDialog = false;
+    showSuccessModal = false;
     currentBlock = null;
     holdBlock = null;
     canHold = true;
@@ -197,9 +206,27 @@ class GameProvider with ChangeNotifier {
   void finalGameOver() {
     isGameOver = true;
     showContinueDialog = false;
-    continuesRemaining = 0;
+    showSuccessModal = false;
     _timer?.cancel();
     _saveData();
+    notifyListeners();
+  }
+
+  void acknowledgeLevelUp() {
+    showSuccessModal = false;
+    isPaused = false;
+    isNewHighScore = false;
+    levelCoins = 0;
+    _startTimer();
+    notifyListeners();
+  }
+
+  // Debug method to simulate level up success modal
+  void triggerLevelUpDebug() {
+    level++;
+    showSuccessModal = true;
+    isPaused = true;
+    _timer?.cancel();
     notifyListeners();
   }
 
@@ -391,7 +418,25 @@ class GameProvider with ChangeNotifier {
     }
 
     if (linesCleared > 0) {
+      // Calculate bonus coins first
+      int earned = 0;
+      switch (linesCleared) {
+        case 1:
+          earned = 1;
+          break;
+        case 2:
+          earned = 2;
+          break;
+        case 3:
+          earned = 5;
+          break;
+        case 4:
+          earned = 10;
+          break;
+      }
+
       onSoundTrigger?.call('lineClear');
+      onLineClear?.call(linesCleared, earned);
       linesClearedTotal += linesCleared;
 
       int points = 0;
@@ -411,7 +456,15 @@ class GameProvider with ChangeNotifier {
       }
       score += points * level;
 
-      coins += linesCleared * 2;
+      coins += earned;
+      levelCoins += earned;
+
+      if (score > highScore) {
+        isNewHighScore = true;
+        // High score is saved in _saveData called when game ends
+        // but we update it here for immediate feedback if needed
+        highScore = score;
+      }
 
       // Level up logic: every 10 lines
       if (linesClearedTotal - _lastLevelUpLines >= 10) {
@@ -419,7 +472,14 @@ class GameProvider with ChangeNotifier {
         _lastLevelUpLines = (linesClearedTotal ~/ 10) * 10;
         int newSpeed = max(100, 800 - (level * 50));
         _speed = Duration(milliseconds: newSpeed);
-        _startTimer();
+
+        // Success Modal logic
+        showSuccessModal = true;
+        isPaused = true;
+        _timer?.cancel();
+
+        // Trigger level start animation callback
+        onLevelStart?.call();
       }
 
       notifyListeners();
