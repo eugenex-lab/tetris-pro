@@ -69,11 +69,9 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#E6D4B2"
-  image: "assets/icons/splash.png"
-  android_12:
-    image: "assets/icons/splash.png"
-    color: "#E6D4B2"
   fullscreen: true
+  android_12:
+    color: "#E6D4B2"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

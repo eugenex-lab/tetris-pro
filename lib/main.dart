@@ -4,8 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:tetris_pro/core/app_theme.dart';
 import 'package:tetris_pro/providers/game_provider.dart';
 import 'package:tetris_pro/providers/audio_provider.dart';
-import 'package:tetris_pro/services/ad_manager.dart';
-import 'package:tetris_pro/screens/home_screen.dart';
+import 'package:tetris_pro/screens/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 

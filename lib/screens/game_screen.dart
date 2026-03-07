@@ -566,7 +566,9 @@ class _GameScreenState extends State<GameScreen> {
                         context.read<AudioProvider>().playSoundEffect(
                           SoundEffect.buttonClick,
                         );
-                        game.pauseGame();
+                        AdManager.instance.showInterstitialAd(
+                          onAdClosed: () => game.pauseGame(),
+                        );
                       },
                       color: AppTheme.woodLight,
                     ),
@@ -606,34 +608,41 @@ class _GameScreenState extends State<GameScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _SmallMenuButton(
-                          label: "RESTART",
-                          icon: FontAwesomeIcons.rotateLeft,
-                          onPressed: () {
-                            context.read<AudioProvider>().playSoundEffect(
-                              SoundEffect.buttonClick,
-                            );
-                            AdManager.instance.showInterstitialAd(
-                              onAdClosed: () => game.restartGame(),
-                            );
-                          },
+                        Expanded(
+                          child: _LargeMenuButton(
+                            label: "RESTART",
+                            icon: FontAwesomeIcons.rotateLeft,
+                            fontSize: 14,
+                            onPressed: () {
+                              context.read<AudioProvider>().playSoundEffect(
+                                SoundEffect.buttonClick,
+                              );
+                              AdManager.instance.showInterstitialAd(
+                                onAdClosed: () => game.restartGame(),
+                              );
+                            },
+                            color: const Color(0xFF8D6E63),
+                          ),
                         ),
-                        const SizedBox(width: 20),
-                        _SmallMenuButton(
-                          label: "MENU",
-                          icon: FontAwesomeIcons.house,
-                          onPressed: () {
-                            context.read<AudioProvider>().playSoundEffect(
-                              SoundEffect.buttonClick,
-                            );
-                            AdManager.instance.showInterstitialAd(
-                              onAdClosed: () => Navigator.pop(context),
-                            );
-                          },
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _LargeMenuButton(
+                            label: "MENU",
+                            icon: FontAwesomeIcons.house,
+                            fontSize: 14,
+                            onPressed: () {
+                              context.read<AudioProvider>().playSoundEffect(
+                                SoundEffect.buttonClick,
+                              );
+                              AdManager.instance.showInterstitialAd(
+                                onAdClosed: () => Navigator.pop(context),
+                              );
+                            },
+                            color: const Color(0xFF795548),
+                          ),
                         ),
                       ],
                     ),
@@ -753,49 +762,30 @@ class _GameScreenState extends State<GameScreen> {
           titleColor: Colors.redAccent,
           children: [
             const SizedBox(height: 10),
-            // Main Score Highlight
-            _buildGameOverStat(
-              "FINAL SCORE",
-              "${game.score}",
-              true,
-            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
-
-            const SizedBox(height: 24),
-
-            // Stat Grid
+            // Stat Grid - Score and Level on one line
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.black.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
-              child: GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: 2,
-                childAspectRatio: 1.8,
-                physics: const NeverScrollableScrollPhysics(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildGameOverStat(
-                    "BEST",
-                    "${game.highScore}",
+                    "SCORE",
+                    "${game.score}",
                     false,
-                  ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2),
+                    isHighlight: game.isNewHighScore,
+                    isNewBest: game.isNewHighScore,
+                  ).animate().fadeIn(delay: 200.ms),
+                  Container(width: 1, height: 30, color: Colors.black12),
                   _buildGameOverStat(
-                    "LEVEL",
+                    "LEVEL REACHED",
                     "${game.level}",
                     false,
-                  ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.2),
-                  _buildGameOverStat(
-                    "LINES",
-                    "${game.linesClearedTotal}",
-                    false,
-                  ).animate().fadeIn(delay: 600.ms).slideX(begin: -0.2),
-                  _buildGameOverStat(
-                    "COINS",
-                    "+${game.score ~/ 100}",
-                    false,
-                  ).animate().fadeIn(delay: 700.ms).slideX(begin: 0.2),
+                  ).animate().fadeIn(delay: 400.ms),
                 ],
               ),
             ),
@@ -804,7 +794,7 @@ class _GameScreenState extends State<GameScreen> {
             // Watch Ad for Coins Banner
             _buildCoinAdBanner(context, game).animate().fadeIn(delay: 900.ms),
 
-            const SizedBox(height: 32),
+            // Action Buttons - Stacked and Full-Width to match other sections
             Column(
               children: [
                 _LargeMenuButton(
@@ -842,35 +832,68 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildGameOverStat(String label, String value, bool primary) {
+  Widget _buildGameOverStat(
+    String label,
+    String value,
+    bool primary, {
+    bool isHighlight = false,
+    bool isNewBest = false,
+  }) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        if (isNewBest)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD54F),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              "NEW BEST!",
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF3E2723),
+              ),
+            ),
+          ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 1.seconds),
+
         Text(
           label,
           style: AppTheme.bodyStyle.copyWith(
-            fontSize: 10,
+            fontSize: primary ? 12 : 10,
             fontWeight: FontWeight.w900,
             letterSpacing: 2,
-            color: const Color(0xFF5D4037).withValues(alpha: 0.8),
+            color: isHighlight
+                ? const Color(0xFFD84315)
+                : const Color(0xFF5D4037).withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          value,
-          style: AppTheme.titleStyle.copyWith(
-            fontSize: primary ? 42 : 32,
-            color: const Color(0xFF3E2723),
-            height: 1.1,
-          ),
-        ),
+              value,
+              style: AppTheme.titleStyle.copyWith(
+                fontSize: primary ? 48 : 36,
+                color: isHighlight
+                    ? const Color(0xFFD84315)
+                    : const Color(0xFF3E2723),
+                height: 1.1,
+              ),
+            )
+            .animate(target: isNewBest ? 1 : 0)
+            .shimmer(duration: 2.seconds, color: Colors.white54),
       ],
     );
   }
 
   Widget _buildCoinAdBanner(BuildContext context, GameProvider game) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.symmetric(
+        vertical: 16,
+        horizontal: 4,
+      ), // Increased vertical margin
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
@@ -893,7 +916,7 @@ class _GameScreenState extends State<GameScreen> {
             color: Colors.white.withValues(alpha: 0.4),
             offset: const Offset(0, 2),
             blurRadius: 0,
-            spreadRadius: 1, // Inner highlight look via border
+            spreadRadius: 1,
           ),
         ],
       ),
@@ -910,12 +933,15 @@ class _GameScreenState extends State<GameScreen> {
           },
           borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 20,
+            ), // More balanced padding
             child: Row(
               children: [
                 // Animated Coin Icon
                 Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
@@ -930,7 +956,7 @@ class _GameScreenState extends State<GameScreen> {
                       child: const Icon(
                         FontAwesomeIcons.coins,
                         color: Color(0xFFFF8F00),
-                        size: 28,
+                        size: 24, // Slightly smaller for better fit
                       ),
                     )
                     .animate(
@@ -953,14 +979,16 @@ class _GameScreenState extends State<GameScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize:
+                        MainAxisSize.min, // Ensure it doesn't push too much
                     children: [
                       Text(
                         "FREE COINS!",
                         style: AppTheme.titleStyle.copyWith(
-                          fontSize: 15,
+                          fontSize: 14, // Slightly smaller for premium look
                           color: const Color(0xFF3E2723),
                           fontWeight: FontWeight.w900,
-                          shadows: [], // Remove default shadows for clean look
+                          shadows: [],
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -969,21 +997,18 @@ class _GameScreenState extends State<GameScreen> {
                           Text(
                             "+20",
                             style: AppTheme.bodyStyle.copyWith(
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFFD84315),
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              "Coins",
-                              style: AppTheme.bodyStyle.copyWith(
-                                fontSize: 11,
-                                color: const Color(0xFF3E2723),
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            "Coins",
+                            style: AppTheme.bodyStyle.copyWith(
+                              fontSize: 10,
+                              color: const Color(0xFF3E2723),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -992,11 +1017,13 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
 
+                const SizedBox(width: 12),
+
                 // Action Button
                 Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                        horizontal: 14,
+                        vertical: 12, // More vertical padding for the button
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF3E2723),
@@ -1013,9 +1040,9 @@ class _GameScreenState extends State<GameScreen> {
                         "GET +20",
                         style: TextStyle(
                           color: Color(0xFFFFD54F),
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     )
@@ -1576,44 +1603,46 @@ class _MenuCard extends StatelessWidget {
           const Positioned(bottom: -10, left: -10, child: _ScrewDetail()),
           const Positioned(bottom: -10, right: -10, child: _ScrewDetail()),
           // Content
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: AppTheme.titleStyle.copyWith(
-                  color: titleColor ?? const Color(0xFF3E2723),
-                  fontSize: 36,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black12,
-                      offset: const Offset(1, 1),
-                      blurRadius: 2,
+          SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: AppTheme.titleStyle.copyWith(
+                    color: titleColor ?? const Color(0xFF3E2723),
+                    fontSize: 32, // Slightly reduced
+                    shadows: [
+                      Shadow(
+                        color: Colors.black12,
+                        offset: const Offset(1, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  height: 3,
+                  width: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3E2723).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ...children,
+                const SizedBox(height: 12),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "...",
+                      style: TextStyle(color: Colors.black26, fontSize: 18),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 3,
-                width: 100,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3E2723).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              ...children,
-              const SizedBox(height: 16),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "...",
-                    style: TextStyle(color: Colors.black26, fontSize: 24),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -1639,12 +1668,14 @@ class _LargeMenuButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
   final Color color;
+  final double fontSize;
 
   const _LargeMenuButton({
     required this.label,
     required this.icon,
     required this.onPressed,
     required this.color,
+    this.fontSize = 18,
   });
 
   @override
@@ -1652,7 +1683,7 @@ class _LargeMenuButton extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        width: 220,
+        width: double.infinity, // Changed to fill available space
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: const Color(0xFF5D4037),
@@ -1674,57 +1705,8 @@ class _LargeMenuButton extends StatelessWidget {
               label,
               style: AppTheme.buttonStyle.copyWith(
                 color: Colors.white,
-                fontSize: 20,
+                fontSize: fontSize,
                 letterSpacing: 1.2,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SmallMenuButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _SmallMenuButton({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 100,
-        height: 80,
-        decoration: BoxDecoration(
-          color: const Color(0xFF8D6E63).withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              offset: const Offset(0, 3),
-              blurRadius: 3,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: const Color(0xFFFFD54F), size: 24),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: AppTheme.bodyStyle.copyWith(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
               ),
             ),
           ],
