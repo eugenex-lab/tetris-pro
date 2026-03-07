@@ -1,4 +1,4 @@
-package com.eugenexlab.tetrispro.tetris_pro
+package com.eugenexlab.tetrispro
 
 import io.flutter.embedding.android.FlutterActivity
 
