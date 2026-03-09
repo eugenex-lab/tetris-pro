@@ -889,174 +889,199 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildCoinAdBanner(BuildContext context, GameProvider game) {
-    return Container(
-      margin: const EdgeInsets.symmetric(
-        vertical: 16,
-        horizontal: 4,
-      ), // Increased vertical margin
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFFFD700), // Gold
-            const Color(0xFFFFA000), // Amber
-            const Color(0xFFFF8F00), // Dark Amber
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF6F00).withValues(alpha: 0.5),
-            offset: const Offset(0, 8),
-            blurRadius: 20,
-            spreadRadius: -5,
-          ),
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.4),
-            offset: const Offset(0, 2),
-            blurRadius: 0,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            context.read<AudioProvider>().playSoundEffect(
-              SoundEffect.buttonClick,
-            );
-            AdManager.instance.showRewardedAd(
-              onRewarded: () => game.addRewardCoins(20),
-            );
-          },
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 20,
-            ), // More balanced padding
+    return ValueListenableBuilder<bool>(
+      valueListenable: AdManager.instance.isOffline,
+      builder: (context, isOffline, child) {
+        if (isOffline) {
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              color: const Color(0xFF3E2723).withValues(alpha: 0.2),
+              border: Border.all(color: Colors.white10),
+            ),
             child: Row(
               children: [
-                // Animated Coin Icon
                 Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        FontAwesomeIcons.coins,
-                        color: Color(0xFFFF8F00),
-                        size: 24, // Slightly smaller for better fit
-                      ),
-                    )
-                    .animate(
-                      onPlay: (controller) => controller.repeat(reverse: true),
-                    )
-                    .scale(
-                      duration: 1000.ms,
-                      begin: const Offset(1, 1),
-                      end: const Offset(1.1, 1.1),
-                      curve: Curves.easeInOut,
-                    )
-                    .shimmer(
-                      delay: 2000.ms,
-                      duration: 1000.ms,
-                      color: Colors.white,
-                    ),
-
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.wifi_off_rounded,
+                    color: Colors.white24,
+                    size: 24,
+                  ),
+                ),
                 const SizedBox(width: 16),
-
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize:
-                        MainAxisSize.min, // Ensure it doesn't push too much
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "FREE COINS!",
+                        "OFFLINE MODE 🪵",
                         style: AppTheme.titleStyle.copyWith(
-                          fontSize: 14, // Slightly smaller for premium look
-                          color: const Color(0xFF3E2723),
+                          fontSize: 14,
+                          color: Colors.white38,
                           fontWeight: FontWeight.w900,
-                          shadows: [],
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Row(
+                      const Text(
+                        "Connect to reveal rewards",
+                        style: TextStyle(
+                          color: Colors.white24,
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFD700), Color(0xFFFFA000), Color(0xFFFF8F00)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF6F00).withValues(alpha: 0.5),
+                offset: const Offset(0, 8),
+                blurRadius: 20,
+                spreadRadius: -5,
+              ),
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.4),
+                offset: const Offset(0, 2),
+                blurRadius: 0,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                context.read<AudioProvider>().playSoundEffect(
+                  SoundEffect.buttonClick,
+                );
+                AdManager.instance.showRewardedAd(
+                  onRewarded: () => game.addRewardCoins(50),
+                );
+              },
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 20,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            FontAwesomeIcons.coins,
+                            color: Color(0xFFFF8F00),
+                            size: 24,
+                          ),
+                        )
+                        .animate(
+                          onPlay: (controller) =>
+                              controller.repeat(reverse: true),
+                        )
+                        .scale(
+                          duration: 1000.ms,
+                          begin: const Offset(1, 1),
+                          end: const Offset(1.1, 1.1),
+                          curve: Curves.easeInOut,
+                        )
+                        .shimmer(
+                          delay: 2000.ms,
+                          duration: 1000.ms,
+                          color: Colors.white,
+                        ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            "+20",
+                            "BONUS REWARD!",
+                            style: AppTheme.titleStyle.copyWith(
+                              fontSize: 14,
+                              color: const Color(0xFF3E2723),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "+50 COINS",
                             style: AppTheme.bodyStyle.copyWith(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFFD84315),
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            "Coins",
-                            style: AppTheme.bodyStyle.copyWith(
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3E2723),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Text(
+                            "WATCH AD",
+                            style: TextStyle(
+                              color: Color(0xFFFFD54F),
                               fontSize: 10,
-                              color: const Color(0xFF3E2723),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                // Action Button
-                Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12, // More vertical padding for the button
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3E2723),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        "GET +20",
-                        style: TextStyle(
-                          color: Color(0xFFFFD54F),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
+                        )
+                        .animate(onPlay: (controller) => controller.repeat())
+                        .shimmer(
+                          delay: 3000.ms,
+                          duration: 1500.ms,
+                          color: Colors.white.withValues(alpha: 0.3),
                         ),
-                      ),
-                    )
-                    .animate(onPlay: (controller) => controller.repeat())
-                    .shimmer(
-                      delay: 3000.ms,
-                      duration: 1500.ms,
-                      color: Colors.white.withValues(alpha: 0.3),
-                    ),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

@@ -158,7 +158,104 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 50),
+                const SizedBox(height: 30),
+
+                // Gamified "Online Only" Reward Button
+                ValueListenableBuilder<bool>(
+                  valueListenable: AdManager.instance.isOffline,
+                  builder: (context, isOffline, child) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                      child: GestureDetector(
+                        onTap: isOffline
+                            ? null
+                            : () {
+                                AdManager.instance.showRewardedAd(
+                                  onRewarded: () {
+                                    game.addRewardCoins(50);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("💎 +50 COINS ADDED!"),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isOffline
+                                ? const Color(0xFF8D6E63).withValues(alpha: 0.3)
+                                : const Color(0xFF4E342E),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isOffline
+                                  ? Colors.transparent
+                                  : const Color(
+                                      0xFFFFD54F,
+                                    ).withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                            boxShadow: isOffline
+                                ? []
+                                : [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFFFFD54F,
+                                      ).withValues(alpha: 0.2),
+                                      blurRadius: 15,
+                                      spreadRadius: -2,
+                                    ),
+                                  ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isOffline
+                                    ? Icons.wifi_off_rounded
+                                    : FontAwesomeIcons.gift,
+                                color: isOffline
+                                    ? const Color(
+                                        0xFF3E2723,
+                                      ).withValues(alpha: 0.4)
+                                    : const Color(0xFFFFD54F),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                isOffline
+                                    ? "OFFLINE MODE 🪵"
+                                    : "GET 50 FREE COINS",
+                                style: TextStyle(
+                                  color: isOffline
+                                      ? const Color(
+                                          0xFF3E2723,
+                                        ).withValues(alpha: 0.4)
+                                      : const Color(0xFFFFD54F),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 12,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                              if (!isOffline) ...[
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.play_circle_outline,
+                                  color: Color(0xFFFFD54F),
+                                  size: 14,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 40),
 
                 // Center Play Button
                 GestureDetector(

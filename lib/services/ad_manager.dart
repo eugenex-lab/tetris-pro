@@ -1,8 +1,10 @@
 // File: lib/services/ad_manager.dart
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 enum AdBannerType { home, game }
 
@@ -16,9 +18,12 @@ class AdManager {
   InterstitialAd? _interstitialAd;
   RewardedAd? _rewardedAd;
 
-  // State tracking
   DateTime? _appPausedTime;
   bool _isShowingAd = false;
+  StreamSubscription? _connectivitySubscription;
+
+  // Offline tracking
+  final ValueNotifier<bool> isOffline = ValueNotifier(false);
 
   // Production Ad Unit IDs from environment variables
   static String _getBannerAdUnitId(AdBannerType type) {
@@ -55,6 +60,21 @@ class AdManager {
     _loadInterstitialAd();
     _loadRewardedAd();
     _loadNativeAd();
+
+    // Listen to connectivity changes
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      results,
+    ) {
+      final result = results.first; // Get most recent result
+      isOffline.value = result == ConnectivityResult.none;
+      if (!isOffline.value) {
+        // Retry loading ads if we just got online
+        _loadAppOpenAd();
+        _loadInterstitialAd();
+        _loadRewardedAd();
+        _loadNativeAd();
+      }
+    });
   }
 
   // ==================== BANNER AD ====================
@@ -75,6 +95,8 @@ class AdManager {
         onAdFailedToLoad: (error) {
           debugPrint('App Open ad failed to load: $error');
           _appOpenAd = null;
+          // Check for network errors (simplified check for AdMob error codes)
+          if (error.code == 0 || error.code == 2) isOffline.value = true;
         },
       ),
     );
@@ -277,6 +299,7 @@ class AdManager {
 
   // Dispose all ads
   void dispose() {
+    _connectivitySubscription?.cancel();
     _nativeAd?.dispose();
     _appOpenAd?.dispose();
     _interstitialAd?.dispose();
@@ -312,6 +335,7 @@ class _BannerAdWidgetState extends State<_BannerAdWidget> {
           if (mounted) {
             setState(() {
               _isLoaded = true;
+              AdManager.instance.isOffline.value = false;
             });
           }
         },
@@ -347,6 +371,29 @@ class _BannerAdWidgetState extends State<_BannerAdWidget> {
         child: AdWidget(ad: _bannerAd!),
       );
     }
-    return const SizedBox(height: 50);
+
+    // Placeholder for offline/loading state
+    return Container(
+      height: 50,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppTheme.surface.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.1)),
+      ),
+      child: Center(
+        child: Text(
+          AdManager.instance.isOffline.value
+              ? "PLAYING OFFLINE 🪵"
+              : "LOADING...",
+          style: AppTheme.bodyStyle.copyWith(
+            fontSize: 10,
+            letterSpacing: 2,
+            color: AppTheme.primary.withValues(alpha: 0.3),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 }
