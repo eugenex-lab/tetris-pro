@@ -42,320 +42,258 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           child: SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                // Top Bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Restored Yellow Coin Button
-                      _buildTopPill(
-                        icon: FontAwesomeIcons.coins,
-                        color: const Color(0xFFFFD54F),
-                        text: "${game.coins}",
-                        isCoin: true,
-                      ),
-                      // Settings
-                      Container(
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF4E342E),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.settings,
-                            color: Color(0xFFD7CCC8),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          // Top Bar
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Restored Yellow Coin Button
+                                _buildTopPill(
+                                  icon: FontAwesomeIcons.coins,
+                                  color: const Color(0xFFFFD54F),
+                                  text: "${game.coins}",
+                                  isCoin: true,
+                                ),
+                                // Settings
+                                Container(
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF4E342E),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.settings,
+                                      color: Color(0xFFD7CCC8),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const SettingsScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SettingsScreen(),
+
+                          const SizedBox(height: 40),
+
+                          // Logo Area
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "TETRIS",
+                                style: AppTheme.titleStyle.copyWith(
+                                  fontSize: 56, // Adjusted size
+                                  color: const Color(0xFF3E2723),
+                                  height: 0.9,
+                                  shadows: [],
+                                ),
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Spacer(flex: 2),
-
-                // Logo Area
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      "TETRIS",
-                      style: AppTheme.titleStyle.copyWith(
-                        fontSize: 56, // Adjusted size
-                        color: const Color(0xFF3E2723),
-                        height: 0.9,
-                        shadows: [],
-                      ),
-                    ),
-                    Text(
-                      "PRO",
-                      style: AppTheme.titleStyle.copyWith(
-                        fontSize: 64,
-                        color: const Color(0xFF3E2723),
-                        height: 0.9,
-                        fontWeight: FontWeight.w900,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            offset: const Offset(2, 4),
-                            blurRadius: 4,
+                              Text(
+                                "PRO",
+                                style: AppTheme.titleStyle.copyWith(
+                                  fontSize: 64,
+                                  color: const Color(0xFF3E2723),
+                                  height: 0.9,
+                                  fontWeight: FontWeight.w900,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      offset: const Offset(2, 4),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                height: 4,
+                                width: 120,
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF3E2723,
+                                  ).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 4,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3E2723).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 40),
+                          const SizedBox(height: 40),
 
-                // Stats Row
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Transform.rotate(
-                          angle: -0.05,
-                          child: _buildStatBox(
-                            label: "LEVEL",
-                            value: "${game.level}",
+                          // Stats Row
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32.0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Transform.rotate(
+                                    angle: -0.05,
+                                    child: _buildStatBox(
+                                      label: "LEVEL",
+                                      value: "${game.level}",
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  child: Transform.rotate(
+                                    angle: 0.05,
+                                    child: _buildStatBox(
+                                      label: "BEST",
+                                      value: "${game.highScore}",
+                                      valueColor: const Color(
+                                        0xFFFFD54F,
+                                      ), // Gold color
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: Transform.rotate(
-                          angle: 0.05,
-                          child: _buildStatBox(
-                            label: "BEST",
-                            value: "${game.highScore}",
-                            valueColor: const Color(0xFFFFD54F), // Gold color
+
+                          const SizedBox(height: 10),
+
+                          const SizedBox(height: 40),
+
+                          // Center Play Button
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const GameScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: 140, // Slightly bigger
+                              height: 140,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF5D4037),
+                                borderRadius: BorderRadius.circular(40),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    offset: const Offset(0, 10),
+                                    blurRadius: 20,
+                                  ),
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF8D6E63,
+                                    ), // Lighter top edge highlight
+                                    offset: const Offset(0, -4),
+                                    blurRadius: 0,
+                                    spreadRadius: -2,
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 110,
+                                  height: 110,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFFFFD54F),
+                                      width: 3,
+                                    ),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        const Color(0xFF5D4037),
+                                        const Color(0xFF3E2723),
+                                      ],
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.play_arrow_rounded,
+                                    size: 70,
+                                    color: Color(0xFFFFD54F),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
-                const SizedBox(height: 30),
+                          const Spacer(),
 
-                // Gamified "Online Only" Reward Button
-                ValueListenableBuilder<bool>(
-                  valueListenable: AdManager.instance.isOffline,
-                  builder: (context, isOffline, child) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                      child: GestureDetector(
-                        onTap: isOffline
-                            ? null
-                            : () {
-                                AdManager.instance.showRewardedAd(
-                                  onRewarded: () {
-                                    game.addRewardCoins(50);
+                          // Bottom Side Buttons (Settings, etc - repurposed)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 40.0,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Left Button (Stats/Leaderboard)
+                                _buildSquareButton(
+                                  icon: Icons.bar_chart_rounded,
+                                  onTap: () {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text("💎 +50 COINS ADDED!"),
+                                        content: Text(
+                                          "Leaderboard coming soon!",
+                                        ),
                                       ),
                                     );
                                   },
-                                );
-                              },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: isOffline
-                                ? const Color(0xFF8D6E63).withValues(alpha: 0.3)
-                                : const Color(0xFF4E342E),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isOffline
-                                  ? Colors.transparent
-                                  : const Color(
-                                      0xFFFFD54F,
-                                    ).withValues(alpha: 0.5),
-                              width: 2,
-                            ),
-                            boxShadow: isOffline
-                                ? []
-                                : [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFFFFD54F,
-                                      ).withValues(alpha: 0.2),
-                                      blurRadius: 15,
-                                      spreadRadius: -2,
-                                    ),
-                                  ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                isOffline
-                                    ? Icons.wifi_off_rounded
-                                    : FontAwesomeIcons.gift,
-                                color: isOffline
-                                    ? const Color(
-                                        0xFF3E2723,
-                                      ).withValues(alpha: 0.4)
-                                    : const Color(0xFFFFD54F),
-                                size: 18,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                isOffline
-                                    ? "OFFLINE MODE 🪵"
-                                    : "GET 50 FREE COINS",
-                                style: TextStyle(
-                                  color: isOffline
-                                      ? const Color(
-                                          0xFF3E2723,
-                                        ).withValues(alpha: 0.4)
-                                      : const Color(0xFFFFD54F),
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 12,
-                                  letterSpacing: 1.5,
                                 ),
-                              ),
-                              if (!isOffline) ...[
-                                const SizedBox(width: 8),
-                                const Icon(
-                                  Icons.play_circle_outline,
-                                  color: Color(0xFFFFD54F),
-                                  size: 14,
+
+                                // Right Button (Awards/Skins)
+                                _buildSquareButton(
+                                  icon: FontAwesomeIcons.ribbon, // Or similar
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Skins coming soon!"),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 40),
-
-                // Center Play Button
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const GameScreen()),
-                    );
-                  },
-                  child: Container(
-                    width: 140, // Slightly bigger
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF5D4037),
-                      borderRadius: BorderRadius.circular(40),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          offset: const Offset(0, 10),
-                          blurRadius: 20,
-                        ),
-                        BoxShadow(
-                          color: const Color(
-                            0xFF8D6E63,
-                          ), // Lighter top edge highlight
-                          offset: const Offset(0, -4),
-                          blurRadius: 0,
-                          spreadRadius: -2,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 110,
-                        height: 110,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFFFFD54F),
-                            width: 3,
-                          ),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xFF5D4037),
-                              const Color(0xFF3E2723),
-                            ],
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow_rounded,
-                          size: 70,
-                          color: Color(0xFFFFD54F),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const Spacer(),
-
-                // Bottom Side Buttons (Settings, etc - repurposed)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40.0,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Left Button (Stats/Leaderboard)
-                      _buildSquareButton(
-                        icon: Icons.bar_chart_rounded,
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Leaderboard coming soon!"),
                             ),
-                          );
-                        },
+                          ),
+                          const SizedBox(height: 10),
+                          // Banner Ad
+                          AdManager.instance.buildBannerWidget(
+                            AdBannerType.home,
+                          ),
+                          const SizedBox(height: 4),
+                        ],
                       ),
-
-                      // Right Button (Awards/Skins)
-                      _buildSquareButton(
-                        icon: FontAwesomeIcons.ribbon, // Or similar
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Skins coming soon!")),
-                          );
-                        },
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                // Banner Ad
-                AdManager.instance.buildBannerWidget(AdBannerType.home),
-                const SizedBox(height: 4),
-              ],
+                );
+              },
             ),
           ),
         ),
