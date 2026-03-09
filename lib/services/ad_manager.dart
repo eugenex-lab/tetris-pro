@@ -113,13 +113,13 @@ class AdManager {
       debugPrint('App resumed after: ${awayDuration.inSeconds} seconds');
 
       if (awayDuration > const Duration(minutes: 2)) {
-        _showAppOpenAd();
+        showAppOpenAd();
       }
     }
     _appPausedTime = null;
   }
 
-  void _showAppOpenAd() {
+  void showAppOpenAd({VoidCallback? onAdClosed}) {
     if (_appOpenAd == null) {
       debugPrint('App Open ad not ready');
       _loadAppOpenAd();
@@ -137,6 +137,7 @@ class AdManager {
         ad.dispose();
         _appOpenAd = null;
         _loadAppOpenAd();
+        onAdClosed?.call();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         debugPrint('App Open ad failed to show: $error');
@@ -144,6 +145,7 @@ class AdManager {
         ad.dispose();
         _appOpenAd = null;
         _loadAppOpenAd();
+        onAdClosed?.call();
       },
     );
 

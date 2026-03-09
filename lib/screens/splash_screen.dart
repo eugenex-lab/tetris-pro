@@ -16,15 +16,39 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Navigate to HomeScreen after 3 seconds
+    _startAppFlow();
+  }
+
+  void _startAppFlow() {
+    // We wait 3 seconds for the splash animation to play
+    // Then we check if an App Open ad is ready
     Timer(const Duration(seconds: 4), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      }
+      if (!mounted) return;
+
+      // Attempt to show App Open ad on cold start
+      AdManager.instance.showAppOpenAd(
+        onAdClosed: () {
+          _navigateToHome();
+        },
+      );
+
+      // Safety timeout: In case the ad manager doesn't trigger correctly or ad is null
+      // We check if we already navigated to avoid double navigation
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          _navigateToHome();
+        }
+      });
     });
+  }
+
+  void _navigateToHome() {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    }
   }
 
   @override
