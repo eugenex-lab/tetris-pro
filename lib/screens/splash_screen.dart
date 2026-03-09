@@ -112,21 +112,39 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Tetris Blocks "Filling Up" animation
-                    _buildTetrisLoading(),
-                    const SizedBox(height: 12),
+                    // Premium Linear Loader
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 60.0),
+                      child: Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: const LinearProgressIndicator(
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppTheme.accent,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 1.seconds, duration: 800.ms),
+
+                    const SizedBox(height: 20),
                     Text(
-                          "PREPARING YOUR BLOCKS...",
+                          "STARTING GAME...",
                           style: AppTheme.bodyStyle.copyWith(
                             fontSize: 12,
-                            letterSpacing: 3,
-                            color: AppTheme.accent.withValues(alpha: 0.6),
+                            letterSpacing: 4,
+                            color: AppTheme.accent.withValues(alpha: 0.8),
                             fontWeight: FontWeight.w900,
                           ),
                         )
                         .animate(onPlay: (c) => c.repeat(reverse: true))
-                        .fadeIn(duration: 600.ms)
-                        .fadeOut(delay: 1000.ms, duration: 600.ms),
+                        .shimmer(duration: 1.5.seconds, color: Colors.white24),
                   ],
                 ),
               ),
@@ -134,102 +152,6 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTetrisLoading() {
-    const double blockSize = 14.0;
-    const double spacing = 2.0;
-
-    // Define some classic Tetris shapes as offsets
-    final shapes = [
-      [
-        const Offset(0, 0),
-        const Offset(1, 0),
-        const Offset(2, 0),
-        const Offset(3, 0),
-      ], // I
-      [
-        const Offset(0, 0),
-        const Offset(1, 0),
-        const Offset(0, 1),
-        const Offset(1, 1),
-      ], // O
-      [
-        const Offset(1, 0),
-        const Offset(0, 1),
-        const Offset(1, 1),
-        const Offset(2, 1),
-      ], // T
-      [
-        const Offset(0, 0),
-        const Offset(0, 1),
-        const Offset(1, 1),
-        const Offset(2, 1),
-      ], // L
-    ];
-
-    final colors = [Colors.cyan, Colors.yellow, Colors.purple, Colors.orange];
-
-    return SizedBox(
-      height: blockSize * 5,
-      child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List.generate(shapes.length, (index) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: spacing * 3),
-              child: _buildFallingShape(shapes[index], colors[index], index),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallingShape(List<Offset> blocks, Color color, int index) {
-    const double size = 10.0;
-    const double gap = 1.0;
-
-    return SizedBox(
-      width: size * 3,
-      height: size * 4,
-      child:
-          Stack(
-                children: blocks.map((offset) {
-                  return Positioned(
-                    left: offset.dx * size,
-                    top: offset.dy * size,
-                    child: Container(
-                      width: size - gap,
-                      height: size - gap,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 2,
-                            offset: const Offset(1, 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              )
-              .animate(onPlay: (c) => c.repeat())
-              .moveY(
-                begin: -60,
-                end: 0,
-                duration: 600.ms,
-                delay: (index * 600).ms,
-                curve: Curves.easeOutCubic,
-              )
-              .fadeIn(duration: 300.ms)
-              .then(delay: 2000.ms)
-              .fadeOut(duration: 400.ms),
     );
   }
 }
