@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tetris Pro - Premium Wood Block Puzzle</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <meta
+      name="description"
+      content="Experience the ultimate wooden Tetris challenge. Polished blocks, smooth animations, and a premium puzzle experience."
+    />
+  </head>
+  <body>
+    <div class="background-texture"></div>
+    <div class="floating-elements">
+      <div class="f-block f-1"></div>
+      <div class="f-block f-2"></div>
+      <div class="f-block f-3"></div>
+    </div>
+
+    <header class="main-header">
+      <div class="container header-container">
+        <div class="header-logo">
+          <span class="logo-tetris-small">TETRIS</span>
+          <span class="logo-pro-small">PRO</span>
+        </div>
+
+        <nav class="desktop-nav">
+          <a href="#hero">Home</a>
+          <a href="#showcase">Features</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="terms.html">Terms</a>
+        </nav>
+
+        <button
+          class="burger-menu"
+          id="burgerToggle"
+          aria-label="Toggle Navigation"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="mobile-nav" id="mobileNav">
+      <a href="#hero" class="mobile-link">Home</a>
+      <a href="#showcase" class="mobile-link">Features</a>
+      <a href="privacy.html" class="mobile-link">Privacy Policy</a>
+      <a href="terms.html" class="mobile-link">Terms of Service</a>
+      <a href="mailto:kolapo.eugene@gmail.com" class="mobile-link"
+        >Contact Support</a
+      >
+    </nav>
+    <main>
+      <section id="hero" class="hero banner-bg">
+        <div class="overlay"></div>
+        <div class="container relative">
+          <div class="logo-text-wrapper">
+            <span class="logo-tetris">TETRIS</span>
+            <span class="logo-pro">PRO</span>
+          </div>
+          <h1 class="title">TETRIS <span class="pro">PRO</span></h1>
+          <p class="tagline">
+            The most premium block puzzle experience on mobile.
+          </p>
+          <div class="cta-group">
+            <a
+              href="https://play.google.com/store/apps/details?id=com.eugenexlab.tetrispro"
+              class="btn-google-play"
+            >
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
+                alt="Get it on Google Play"
+              />
+            </a>
+            <a href="app-ads.txt" class="btn btn-secondary">app-ads.txt</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="showcase" class="showcase">
+        <div class="container">
+          <div class="showcase-content">
+            <div class="showcase-text">
+              <h2>Crafted for <span class="accent-text">Perfection</span></h2>
+              <p>
+                Every block, every sound, and every animation has been polished
+                to provide a satisfying and premium tactile experience.
+              </p>
+              <ul class="feature-list">
+                <li>High-Definition Wooden Textures</li>
+                <li>Dynamic Haptic Feedback</li>
+                <li>Premium Sound Design</li>
+              </ul>
+            </div>
+            <div class="showcase-image">
+              <img
+                src="assets/featured.jpg"
+                alt="Tetris Pro Showcase"
+                class="rounded-img"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="features">
+        <div class="container grids">
+          <div class="card">
+            <div class="icon">🪵</div>
+            <h3>Wooden Aesthetic</h3>
+            <p>Beautifully crafted wooden blocks and a warm, natural theme.</p>
+          </div>
+          <div class="card">
+            <div class="icon">✨</div>
+            <h3>Smooth Gameplay</h3>
+            <p>
+              Optimized for performance with satisfying animations and haptics.
+            </p>
+          </div>
+          <div class="card">
+            <div class="icon">🏆</div>
+            <h3>Global Leaderboards</h3>
+            <p>Compete with players worldwide and become a Tetris Pro.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="container">
+          <p>&copy; 2026 Eugenex Lab. All rights reserved.</p>
+          <div class="footer-links">
+            <a href="privacy.html">Privacy Policy</a>
+            <a href="terms.html">Terms of Service</a>
+            <a href="mailto:kolapo.eugene@gmail.com">Contact Support</a>
+          </div>
+        </div>
+      </footer>
+    </main>
+    <script>
+      const burgerToggle = document.getElementById("burgerToggle");
+      const mobileNav = document.getElementById("mobileNav");
+      const mobileLinks = document.querySelectorAll(".mobile-link");
+
+      burgerToggle.addEventListener("click", () => {
+        burgerToggle.classList.toggle("active");
+        mobileNav.classList.toggle("active");
+        document.body.style.overflow = mobileNav.classList.contains("active")
+          ? "hidden"
+          : "auto";
+      });
+
+      mobileLinks.forEach((link) => {
+        link.addEventListener("click", () => {
+          burgerToggle.classList.remove("active");
+          mobileNav.classList.remove("active");
+          document.body.style.overflow = "auto";
+        });
+      });
+
+      // Header scroll effect
+      window.addEventListener("scroll", () => {
+        const header = document.querySelector(".main-header");
+        if (window.scrollY > 50) {
+          header.classList.add("scrolled");
+        } else {
+          header.classList.remove("scrolled");
+        }
+      });
+    </script>
+  </body>
+</html>
