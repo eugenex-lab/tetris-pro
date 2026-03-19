@@ -59,6 +59,7 @@ class GameProvider with ChangeNotifier {
   bool showGhostPiece = true;
   bool hapticsEnabled = true;
   bool isNewHighScore = false;
+  bool showTutorial = true;
 
   int get linesUntilNextLevel {
     int linesNeeded = 10;
@@ -81,6 +82,7 @@ class GameProvider with ChangeNotifier {
     coins = prefs.getInt('coins') ?? 100;
     showGhostPiece = prefs.getBool('show_ghost_piece') ?? true;
     hapticsEnabled = prefs.getBool('haptics_enabled') ?? true;
+    showTutorial = prefs.getBool('show_tutorial') ?? true;
     notifyListeners();
   }
 
@@ -93,6 +95,7 @@ class GameProvider with ChangeNotifier {
     await prefs.setInt('coins', coins);
     await prefs.setBool('show_ghost_piece', showGhostPiece);
     await prefs.setBool('haptics_enabled', hapticsEnabled);
+    await prefs.setBool('show_tutorial', showTutorial);
   }
 
   void startGame() {
@@ -242,11 +245,24 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleTutorial() {
+    showTutorial = !showTutorial;
+    _saveData();
+    notifyListeners();
+  }
+
+  void completeTutorial() {
+    showTutorial = false;
+    _saveData();
+    notifyListeners();
+  }
+
   Future<void> resetProgress() async {
     highScore = 0;
     coins = 100;
     showGhostPiece = true;
     hapticsEnabled = true;
+    showTutorial = true;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear(); // Reset everything

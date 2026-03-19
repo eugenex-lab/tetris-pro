@@ -1,11 +1,15 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tetris_pro/core/app_theme.dart';
 import 'package:tetris_pro/providers/game_provider.dart';
 import 'package:tetris_pro/providers/audio_provider.dart';
+import 'package:tetris_pro/screens/settings_screen.dart';
 import 'package:tetris_pro/services/ad_manager.dart';
 import 'package:tetris_pro/widgets/game_board.dart';
+import 'package:tetris_pro/widgets/tutorial_overlay.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -25,6 +29,20 @@ class _GameScreenState extends State<GameScreen> {
   int? _coinsEarned;
   bool _showLineClearAnimation = false;
   bool _showLevelStartAnimation = false;
+  
+  // Hint system
+  Timer? _hintTimer;
+  String? _currentHint;
+  bool _showHint = false;
+  bool _showGestureHint = false;
+  final List<String> _hints = [
+    "Swipe UP to rotate the piece!",
+    "Swipe DOWN to drop faster!",
+    "DOUBLE TAP or SWIPE DOWN FAST for instant drop!",
+    "Use the HOLD box to save a piece for later!",
+    "Clear 4 lines at once for a TETRIS bonus!",
+    "Watch the GHOST piece to see where it lands!",
+  ];
 
   @override
   void initState() {
@@ -100,14 +118,100 @@ class _GameScreenState extends State<GameScreen> {
         });
       };
 
-      game.startGame();
+      if (game.showTutorial) {
+        game.isPaused = true;
+      } else {
+        game.startGame();
+      }
+      
+      _startHintTimer();
     });
   }
 
   @override
   void dispose() {
     _focusNode.dispose();
+    _hintTimer?.cancel();
     super.dispose();
+  }
+
+  void _startHintTimer() {
+    _hintTimer?.cancel();
+    _hintTimer = Timer.periodic(const Duration(seconds: 45), (timer) {
+      if (mounted && !context.read<GameProvider>().isPaused && !context.read<GameProvider>().isGameOver) {
+        _showRandomHint();
+      }
+    });
+  }
+
+  void _showRandomHint() {
+    setState(() {
+      _currentHint = _hints[Random().nextInt(_hints.length)];
+      _showHint = true;
+    });
+
+    Future.delayed(const Duration(seconds: 6), () {
+      if (mounted) {
+        setState(() {
+          _showHint = false;
+        });
+      }
+    });
+  }
+
+  Widget _buildGestureHint() {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Container(
+          color: Colors.black26,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  FontAwesomeIcons.handPointer,
+                  color: Colors.white,
+                  size: 64,
+                )
+                    .animate(onPlay: (controller) => controller.repeat())
+                    .moveX(
+                      begin: -60,
+                      end: 60,
+                      duration: 1.seconds,
+                      curve: Curves.easeInOutBack,
+                    )
+                    .then()
+                    .moveX(
+                      begin: 0,
+                      end: -120,
+                      duration: 1.seconds,
+                      curve: Curves.easeInOutBack,
+                    )
+                    .fadeIn(duration: 500.ms)
+                    .then(delay: 2.seconds)
+                    .fadeOut(duration: 500.ms),
+                const SizedBox(height: 24),
+                Text(
+                  "SWIPE LEFT OR RIGHT TO MOVE",
+                  style: AppTheme.titleStyle.copyWith(
+                    color: Colors.white,
+                    fontSize: 20,
+                    letterSpacing: 1.5,
+                    shadows: [
+                      const Shadow(
+                        color: Colors.black,
+                        blurRadius: 10,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 500.ms),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -166,6 +270,11 @@ class _GameScreenState extends State<GameScreen> {
                         game.rotateBlock();
                       },
                       onHorizontalDragUpdate: (details) {
+                        if (_showGestureHint) {
+                          setState(() {
+                            _showGestureHint = false;
+                          });
+                        }
                         // Sensitivity threshold
                         if (details.delta.dx > 15) {
                           context.read<AudioProvider>().playSoundEffect(
@@ -228,11 +337,75 @@ class _GameScreenState extends State<GameScreen> {
             if (game.isGameOver) _buildGameOverOverlay(context, game),
             if (game.showSuccessModal) _buildSuccessModal(context, game),
 
+            // Tutorial Overlay
+            if (game.showTutorial && !game.isGameOver)
+              TutorialOverlay(
+                onComplete: () {
+                  game.completeTutorial();
+                  game.startGame();
+                  setState(() {
+                    _showGestureHint = true;
+                  });
+                },
+              ),
+
+            // Gesture Hint Overlay
+            if (_showGestureHint) _buildGestureHint(),
+
             // Line clear animation
             if (_showLineClearAnimation) _buildLineClearAnimation(),
 
             // Level start animation
             if (_showLevelStartAnimation) _buildLevelStartAnimation(),
+
+            // Hint Overlay
+            if (_showHint && _currentHint != null)
+              Positioned(
+                bottom: 120,
+                left: 20,
+                right: 20,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: const Color(0xFFFFD54F).withValues(alpha: 0.4),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          FontAwesomeIcons.lightbulb,
+                          color: Color(0xFFFFD54F),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            _currentHint!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack).fadeIn().then(delay: 5.seconds).fadeOut(),
+                ),
+              ),
           ],
         ),
       ),
@@ -573,40 +746,21 @@ class _GameScreenState extends State<GameScreen> {
                       color: AppTheme.woodLight,
                     ),
                     const SizedBox(height: 12),
-                    Consumer<AudioProvider>(
-                      builder: (context, audio, _) {
-                        return Column(
-                          children: [
-                            _LargeMenuButton(
-                              label: audio.isMusicMuted
-                                  ? "MUSIC: OFF"
-                                  : "MUSIC: ON",
-                              icon: FontAwesomeIcons.music,
-                              onPressed: () {
-                                audio.playSoundEffect(SoundEffect.buttonClick);
-                                audio.toggleMusic();
-                              },
-                              color: audio.isMusicMuted
-                                  ? Colors.grey.withValues(alpha: 0.7)
-                                  : Colors.deepPurple.withValues(alpha: 0.8),
-                            ),
-                            const SizedBox(height: 12),
-                            _LargeMenuButton(
-                              label: audio.isSfxMuted ? "SFX: OFF" : "SFX: ON",
-                              icon: audio.isSfxMuted
-                                  ? FontAwesomeIcons.volumeXmark
-                                  : FontAwesomeIcons.volumeHigh,
-                              onPressed: () {
-                                audio.playSoundEffect(SoundEffect.buttonClick);
-                                audio.toggleSfx();
-                              },
-                              color: audio.isSfxMuted
-                                  ? Colors.grey.withValues(alpha: 0.7)
-                                  : Colors.teal.withValues(alpha: 0.8),
-                            ),
-                          ],
+                    _LargeMenuButton(
+                      label: "SETTINGS",
+                      icon: FontAwesomeIcons.gear,
+                      onPressed: () {
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.buttonClick,
+                        );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
                         );
                       },
+                      color: Colors.blueGrey.withValues(alpha: 0.8),
                     ),
                     const SizedBox(height: 12),
                     Row(

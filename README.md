@@ -17,8 +17,10 @@ A premium, wooden-themed Tetris game built with Flutter.
 1.  **Install Flutter**: Ensure you have Flutter installed.
 2.  **Dependencies**: Run `flutter pub get`.
 3.  **Run**:
-    - iOS Simulator: `open -a Simulator` then `flutter run`
-    - Android Emulator: `flutter emulators --launch <emulator_id>` then `flutter run`
+    - iOS: `./start_ios`
+    - Android: `./start_android`
+    - Manual (iOS Simulator): `open -a Simulator` then `flutter run`
+    - Manual (Android Emulator): `flutter emulators --launch <emulator_id>` then `flutter run`
 
 ## Supabase & AdMob Configuration
 

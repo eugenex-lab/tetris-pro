@@ -93,6 +93,12 @@ class SettingsScreen extends StatelessWidget {
                                 icon: FontAwesomeIcons.handPointer,
                                 onChanged: (val) => game.toggleHaptics(),
                               ),
+                              _SettingsToggle(
+                                label: "TUTORIAL",
+                                value: game.showTutorial,
+                                icon: FontAwesomeIcons.circleQuestion,
+                                onChanged: (val) => game.toggleTutorial(),
+                              ),
                             ],
                           ),
                         ),
