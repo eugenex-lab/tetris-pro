@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Ensure dependencies are up to date
+echo "🚀 Getting dependencies..."
+flutter pub get
+
+# Check if macOS support is configured, if not, add it
+if [ ! -d "macos" ]; then
+    echo "🖥️ Adding macOS desktop support..."
+    flutter create --org com.eugenexlab --platforms=macos .
+fi
+
+# Run the game
+echo "🎮 Starting Tetris Pro..."
+# Use interactive selection if multiple devices exist
+# But default to macOS for speed if no device selected
+flutter run
