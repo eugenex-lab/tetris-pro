@@ -1,0 +1,7 @@
+{
+  "name": "tetris-pro",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/$1" }
+  ]
+}
