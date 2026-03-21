@@ -30,6 +30,16 @@ class _GameScreenState extends State<GameScreen> {
   bool _showLineClearAnimation = false;
   bool _showLevelStartAnimation = false;
   
+  // Gesture accumulators
+  double _horizontalDragDist = 0;
+  double _verticalDragDist = 0;
+  static const double _horizontalThreshold = 30.0;
+  static const double _verticalThreshold = 25.0;
+  
+  // Feedback state
+  bool _showMoveEffect = false;
+  int _moveEffectDir = 0; // -1 for left, 1 for right
+
   // Hint system
   Timer? _hintTimer;
   String? _currentHint;
@@ -163,55 +173,109 @@ class _GameScreenState extends State<GameScreen> {
     return Positioned.fill(
       child: IgnorePointer(
         child: Container(
-          color: Colors.black26,
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              colors: [
+                Colors.black.withValues(alpha: 0.1),
+                Colors.black.withValues(alpha: 0.6),
+              ],
+            ),
+          ),
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  FontAwesomeIcons.handPointer,
-                  color: Colors.white,
-                  size: 64,
-                )
-                    .animate(onPlay: (controller) => controller.repeat())
-                    .moveX(
-                      begin: -60,
-                      end: 60,
-                      duration: 1.seconds,
-                      curve: Curves.easeInOutBack,
-                    )
-                    .then()
-                    .moveX(
-                      begin: 0,
-                      end: -120,
-                      duration: 1.seconds,
-                      curve: Curves.easeInOutBack,
-                    )
-                    .fadeIn(duration: 500.ms)
-                    .then(delay: 2.seconds)
-                    .fadeOut(duration: 500.ms),
-                const SizedBox(height: 24),
-                Text(
-                  "SWIPE LEFT OR RIGHT TO MOVE",
-                  style: AppTheme.titleStyle.copyWith(
-                    color: Colors.white,
-                    fontSize: 20,
-                    letterSpacing: 1.5,
-                    shadows: [
-                      const Shadow(
-                        color: Colors.black,
-                        blurRadius: 10,
-                        offset: Offset(2, 2),
+                const SizedBox(height: 120),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      FontAwesomeIcons.chevronLeft,
+                      color: Color(0xFFFFD54F),
+                      size: 40,
+                    ).animate(onPlay: (c) => c.repeat())
+                      .moveX(begin: 0, end: -40, duration: 800.ms, curve: Curves.easeOut)
+                      .fadeOut(duration: 800.ms),
+                    const SizedBox(width: 20),
+                    const Icon(
+                      FontAwesomeIcons.handPointer,
+                      color: Colors.white,
+                      size: 64,
+                    ).animate(onPlay: (controller) => controller.repeat())
+                      .moveX(
+                        begin: -60,
+                        end: 60,
+                        duration: 1.5.seconds,
+                        curve: Curves.easeInOutBack,
+                      )
+                      .then()
+                      .moveX(
+                        begin: 0,
+                        end: -120,
+                        duration: 1.5.seconds,
+                        curve: Curves.easeInOutBack,
+                      ),
+                    const SizedBox(width: 20),
+                    const Icon(
+                      FontAwesomeIcons.chevronRight,
+                      color: Color(0xFFFFD54F),
+                      size: 40,
+                    ).animate(onPlay: (c) => c.repeat())
+                      .moveX(begin: 0, end: 40, duration: 800.ms, curve: Curves.easeOut)
+                      .fadeOut(duration: 800.ms),
+                  ],
+                ),
+                const SizedBox(height: 48),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.5)),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        "SWIPE ANYWHERE TO MOVE",
+                        style: AppTheme.titleStyle.copyWith(
+                          color: const Color(0xFFFFD54F),
+                          fontSize: 18,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        "DOUBLE TAP FOR INSTANT DROP",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
-                ).animate().fadeIn(delay: 500.ms),
+                ).animate().fadeIn(delay: 500.ms).scale(duration: 500.ms, curve: Curves.easeOutBack),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  void _triggerMoveEffect(int dir) {
+    if (!mounted) return;
+    setState(() {
+      _showMoveEffect = true;
+      _moveEffectDir = dir;
+    });
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() {
+          _showMoveEffect = false;
+        });
+      }
+    });
   }
 
   @override
@@ -269,35 +333,58 @@ class _GameScreenState extends State<GameScreen> {
                           HapticFeedback.selectionClick();
                         game.rotateBlock();
                       },
+                      onDoubleTap: () {
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.drop,
+                        );
+                        if (game.hapticsEnabled)
+                          HapticFeedback.heavyImpact();
+                        game.dropBlock();
+                      },
+                      onHorizontalDragStart: (_) => _horizontalDragDist = 0,
                       onHorizontalDragUpdate: (details) {
                         if (_showGestureHint) {
                           setState(() {
                             _showGestureHint = false;
                           });
                         }
+                        
+                        _horizontalDragDist += details.delta.dx;
+
                         // Sensitivity threshold
-                        if (details.delta.dx > 15) {
+                        while (_horizontalDragDist > _horizontalThreshold) {
                           context.read<AudioProvider>().playSoundEffect(
                             SoundEffect.rotate,
                           ); // Using rotate sound for moves if specific move sound missing
                           if (game.hapticsEnabled)
                             HapticFeedback.selectionClick();
                           game.moveRight();
-                        } else if (details.delta.dx < -15) {
+                          _triggerMoveEffect(1);
+                          _horizontalDragDist -= _horizontalThreshold;
+                        }
+                        while (_horizontalDragDist < -_horizontalThreshold) {
                           context.read<AudioProvider>().playSoundEffect(
                             SoundEffect.rotate,
                           );
                           if (game.hapticsEnabled)
                             HapticFeedback.selectionClick();
                           game.moveLeft();
+                          _triggerMoveEffect(-1);
+                          _horizontalDragDist += _horizontalThreshold;
                         }
                       },
+                      onHorizontalDragEnd: (_) => _horizontalDragDist = 0,
+                      onVerticalDragStart: (_) => _verticalDragDist = 0,
                       onVerticalDragUpdate: (details) {
-                        if (details.delta.dy > 10) {
+                        _verticalDragDist += details.delta.dy;
+                        
+                        if (_verticalDragDist > _verticalThreshold) {
                           game.moveDown();
+                          _verticalDragDist = 0; // Reset for vertical to avoid "too fast" drop
                         }
                       },
                       onVerticalDragEnd: (details) {
+                        _verticalDragDist = 0;
                         // Hard drop on fast swipe down
                         if (details.primaryVelocity != null &&
                             details.primaryVelocity! > 1000) {
@@ -316,7 +403,14 @@ class _GameScreenState extends State<GameScreen> {
                             child: SizedBox(
                               width: MediaQuery.of(context).size.width,
                               height: MediaQuery.of(context).size.width * 2,
-                              child: GameBoard(),
+                              child: GameBoard().animate(target: _showMoveEffect ? 1 : 0)
+                                .moveX(
+                                  begin: 0,
+                                  end: _moveEffectDir * 5.0,
+                                  duration: 100.ms,
+                                  curve: Curves.easeOutQuad,
+                                ).then()
+                                .moveX(end: 0, duration: 50.ms),
                             ),
                           ),
                         ),

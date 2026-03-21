@@ -23,8 +23,9 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       'icon': FontAwesomeIcons.gamepad,
       'description': 'Stack the blocks to clear lines and reach the highest score!',
       'controls': [
-        {'icon': Icons.swipe_left_alt, 'label': 'Swipe Left/Right to Move'},
+        {'icon': Icons.swipe_left_alt, 'label': 'Swipe ANYWHERE to Move'},
         {'icon': Icons.touch_app, 'label': 'Tap anywhere to Rotate'},
+        {'icon': Icons.mouse, 'label': 'Double Tap to Instant Drop'},
       ],
     },
     {
@@ -32,8 +33,8 @@ class _TutorialOverlayState extends State<TutorialOverlay> {
       'icon': FontAwesomeIcons.bolt,
       'description': 'Master the drop speeds for better control.',
       'controls': [
-        {'icon': Icons.swipe_down_alt, 'label': 'Slow Swipe Down for Faster Drop'},
-        {'icon': Icons.keyboard_double_arrow_down, 'label': 'Fast Swipe Down for Instant Drop'},
+        {'icon': Icons.swipe_down_alt, 'label': 'Nudge Down for Faster Fall'},
+        {'icon': Icons.keyboard_double_arrow_down, 'label': 'Fast Swipe or Double Tap to Drop'},
       ],
     },
     {
