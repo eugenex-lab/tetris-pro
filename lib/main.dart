@@ -28,14 +28,37 @@ void main() async {
   runApp(const TetrisProApp());
 }
 
-class TetrisProApp extends StatefulWidget {
+class TetrisProApp extends StatelessWidget {
   const TetrisProApp({super.key});
 
   @override
-  State<TetrisProApp> createState() => _TetrisProAppState();
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => GameProvider()),
+        ChangeNotifierProvider(create: (_) => AudioProvider()..init()),
+      ],
+      child: AppLifecycleManager(
+        child: MaterialApp(
+          title: 'Tetris Pro',
+          theme: AppTheme.themeData,
+          home: const SplashScreen(),
+          debugShowCheckedModeBanner: false,
+        ),
+      ),
+    );
+  }
 }
 
-class _TetrisProAppState extends State<TetrisProApp>
+class AppLifecycleManager extends StatefulWidget {
+  final Widget child;
+  const AppLifecycleManager({super.key, required this.child});
+
+  @override
+  State<AppLifecycleManager> createState() => _AppLifecycleManagerState();
+}
+
+class _AppLifecycleManagerState extends State<AppLifecycleManager>
     with WidgetsBindingObserver {
   @override
   void initState() {
@@ -53,27 +76,20 @@ class _TetrisProAppState extends State<TetrisProApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    // Track app lifecycle for Smart App Open Ads
-    if (state == AppLifecycleState.paused) {
+    final audio = context.read<AudioProvider>();
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      audio.pauseMusic();
       AdManager.instance.onAppPaused();
     } else if (state == AppLifecycleState.resumed) {
+      audio.resumeMusic();
       AdManager.instance.onAppResumed();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => GameProvider()),
-        ChangeNotifierProvider(create: (_) => AudioProvider()..init()),
-      ],
-      child: MaterialApp(
-        title: 'Tetris Pro',
-        theme: AppTheme.themeData,
-        home: const SplashScreen(),
-        debugShowCheckedModeBanner: false,
-      ),
-    );
+    return widget.child;
   }
 }

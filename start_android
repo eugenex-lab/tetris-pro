@@ -1,22 +1,22 @@
 #!/bin/bash
 
-# start_android - Robust script to build and run Tetris Pro on Android Emulator
+# start_android - Best-in-class script for Flutter Android Emulator
 
 ADB=~/Library/Android/sdk/platform-tools/adb
 EMULATOR=~/Library/Android/sdk/emulator/emulator
-AVD=Pixel_7
+AVD=antigrvity_pixel
 
-# 1. Set Java 11 (Required for modern Flutter/Gradle projects)
+# 1. Use Java 17 (modern standard)
 if [ -f "/usr/libexec/java_home" ]; then
-    export JAVA_HOME=$(/usr/libexec/java_home -v 11 2>/dev/null || /usr/libexec/java_home -v 17 2>/dev/null)
-    echo "☕ Using JAVA_HOME: $JAVA_HOME"
+    export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+    echo "☕ Using JAVA_HOME (Java 17): $JAVA_HOME"
 fi
 
 # 2. Ensure dependencies are up to date
 echo "🚀 Getting dependencies..."
 flutter pub get
 
-# 3. Check if Android support is configured
+# 3. Ensure Android platform exists
 if [ ! -d "android" ]; then
     echo "🤖 Adding Android support..."
     flutter create --org com.eugenexlab --platforms=android .
@@ -27,30 +27,32 @@ echo "📱 Checking for active emulator..."
 EXISTING=$($ADB devices | grep -v "List" | grep "emulator" | head -n 1 | cut -f1)
 
 if [ -z "$EXISTING" ]; then
-    echo "✨ Starting $AVD emulator fresh..."
+    echo "✨ Starting $AVD emulator..."
     $EMULATOR -avd $AVD \
         -netdelay none \
         -netspeed full \
         -dns-server 8.8.8.8,8.8.4.4,1.1.1.1 \
-        -no-snapshot-load \
         -gpu host \
         -no-boot-anim &
     
-    echo "⏳ Waiting for emulator to boot (this may take a minute)..."
+    echo "⏳ Waiting for emulator to boot..."
     $ADB wait-for-device
-    
-    # Wait for package manager and boot completed
+
     echo "🛠️ Finalizing boot..."
-    until $ADB shell pm list packages >/dev/null 2>&1; do sleep 2; done
-    until [ "$($ADB shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
+    until $ADB shell getprop sys.boot_completed | grep -m 1 "1" >/dev/null; do sleep 2; done
+
     echo "✅ Emulator is ready!"
 else
     echo "✅ Using existing emulator: $EXISTING"
 fi
 
-# 5. Apply DNS/Network Fixes (Optional but helpful)
+# 5. Fix network (optional)
 $ADB shell settings put global http_proxy :0 >/dev/null 2>&1
 
-# 6. Run the Game
-echo "🎮 Starting Tetris Pro..."
-flutter run -d emulator-5554 # Default emulator ID, or use 'android' to auto-pick
+# 6. Detect active device
+DEVICE=$($ADB devices | grep "emulator" | head -n 1 | cut -f1)
+
+echo "🎮 Running on $DEVICE..."
+
+# 7. Run app
+flutter run -d $DEVICE

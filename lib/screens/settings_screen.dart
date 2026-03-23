@@ -56,42 +56,56 @@ class SettingsScreen extends StatelessWidget {
                         // Audio Section
                         _buildSectionHeader("AUDIO"),
                         Consumer<AudioProvider>(
-                          builder: (context, audio, _) => Column(
+                          builder: (context, audio, _) => Row(
                             children: [
-                              _SettingsToggle(
-                                label: "MUSIC",
-                                value: !audio.isMusicMuted,
-                                icon: FontAwesomeIcons.music,
-                                onChanged: (val) => audio.toggleMusic(),
+                              Expanded(
+                                child: _SettingsToggle(
+                                  label: "MUSIC",
+                                  value: !audio.isMusicMuted,
+                                  icon: FontAwesomeIcons.music,
+                                  onChanged: (val) => audio.toggleMusic(),
+                                ),
                               ),
-                              _SettingsToggle(
-                                label: "SOUND EFFECTS",
-                                value: !audio.isSfxMuted,
-                                icon: FontAwesomeIcons.volumeHigh,
-                                onChanged: (val) => audio.toggleSfx(),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _SettingsToggle(
+                                  label: "SOUND",
+                                  value: !audio.isSfxMuted,
+                                  icon: FontAwesomeIcons.volumeHigh,
+                                  onChanged: (val) => audio.toggleSfx(),
+                                ),
                               ),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
                         // Gameplay Section
                         _buildSectionHeader("GAMEPLAY"),
                         Consumer<GameProvider>(
                           builder: (context, game, _) => Column(
                             children: [
-                              _SettingsToggle(
-                                label: "GHOST PIECE",
-                                value: game.showGhostPiece,
-                                icon: FontAwesomeIcons.ghost,
-                                onChanged: (val) => game.toggleGhostPiece(),
-                              ),
-                              _SettingsToggle(
-                                label: "HAPTIC FEEDBACK",
-                                value: game.hapticsEnabled,
-                                icon: FontAwesomeIcons.handPointer,
-                                onChanged: (val) => game.toggleHaptics(),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _SettingsToggle(
+                                      label: "GHOST",
+                                      value: game.showGhostPiece,
+                                      icon: FontAwesomeIcons.ghost,
+                                      onChanged: (val) => game.toggleGhostPiece(),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _SettingsToggle(
+                                      label: "HAPTICS",
+                                      value: game.hapticsEnabled,
+                                      icon: FontAwesomeIcons.handPointer,
+                                      onChanged: (val) => game.toggleHaptics(),
+                                    ),
+                                  ),
+                                ],
                               ),
                               _SettingsToggle(
                                 label: "TUTORIAL",
@@ -122,7 +136,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         const Text(
-                          "v 1.0.0",
+                          "v 1.0.1 (5)",
                           style: TextStyle(
                             color: Colors.black26,
                             fontSize: 10,
@@ -268,30 +282,40 @@ class _SettingsToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.05),
+        color: Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: const Color(0xFF5D4037), size: 18),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF3E2723),
-              fontWeight: FontWeight.w900,
-              fontSize: 13,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: const Color(0xFF5D4037), size: 14),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF3E2723),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
-          const Spacer(),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: const Color(0xFF5D4037),
-            activeTrackColor: const Color(0xFFFFD54F),
+          const SizedBox(height: 2),
+          Transform.scale(
+            scale: 0.85,
+            child: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: const Color(0xFF5D4037),
+              activeTrackColor: const Color(0xFFFFD54F),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
         ],
       ),

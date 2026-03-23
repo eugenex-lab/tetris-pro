@@ -272,8 +272,8 @@ class GameProvider with ChangeNotifier {
 
   // Legacy revive method for coin-based revive (keep for backwards compatibility)
   void revive() {
-    if (coins >= 50) {
-      coins -= 50;
+    if (coins >= 5) {
+      coins -= 5;
       continueGame();
       _saveData();
     }
@@ -368,8 +368,19 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  DateTime? _lastDropTime;
+
   void dropBlock() {
     if (currentBlock == null || isPaused || isGameOver) return;
+    
+    // Prevent rapid consecutive drops
+    final now = DateTime.now();
+    if (_lastDropTime != null && 
+        now.difference(_lastDropTime!).inMilliseconds < 500) {
+      return;
+    }
+    _lastDropTime = now;
+
     while (_isValidMove(currentBlock!)) {
       currentBlock!.y += 1;
     }
@@ -434,52 +445,23 @@ class GameProvider with ChangeNotifier {
     }
 
     if (linesCleared > 0) {
+      linesClearedTotal += linesCleared;
+
       // Calculate bonus coins first
       int earned = 0;
       switch (linesCleared) {
         case 1:
+          earned = 0;
+          break;
+        case 2:
           earned = 1;
           break;
-        case 2:
-          earned = 2;
-          break;
         case 3:
+          earned = 3;
+          break;
+        case 4:
           earned = 5;
           break;
-        case 4:
-          earned = 10;
-          break;
-      }
-
-      onSoundTrigger?.call('lineClear');
-      onLineClear?.call(linesCleared, earned);
-      linesClearedTotal += linesCleared;
-
-      int points = 0;
-      switch (linesCleared) {
-        case 1:
-          points = 100;
-          break;
-        case 2:
-          points = 300;
-          break;
-        case 3:
-          points = 500;
-          break;
-        case 4:
-          points = 800;
-          break;
-      }
-      score += points * level;
-
-      coins += earned;
-      levelCoins += earned;
-
-      if (score > highScore) {
-        isNewHighScore = true;
-        // High score is saved in _saveData called when game ends
-        // but we update it here for immediate feedback if needed
-        highScore = score;
       }
 
       // Level up logic: every 10 lines
@@ -496,6 +478,36 @@ class GameProvider with ChangeNotifier {
 
         // Trigger level start animation callback
         onLevelStart?.call();
+      }
+
+      onSoundTrigger?.call('lineClear');
+      onLineClear?.call(linesCleared, earned);
+
+      int points = 0;
+      switch (linesCleared) {
+        case 1:
+          points = 10;
+          break;
+        case 2:
+          points = 30;
+          break;
+        case 3:
+          points = 60;
+          break;
+        case 4:
+          points = 100;
+          break;
+      }
+      score += points * level;
+
+      coins += earned;
+      levelCoins += earned;
+
+      if (score > highScore) {
+        isNewHighScore = true;
+        // High score is saved in _saveData called when game ends
+        // but we update it here for immediate feedback if needed
+        highScore = score;
       }
 
       notifyListeners();
