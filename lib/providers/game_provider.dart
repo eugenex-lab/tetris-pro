@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants.dart';
 import '../models/block.dart';
+import '../services/notification_service.dart';
+import '../services/retention_service.dart';
 
 class GameProvider with ChangeNotifier {
   List<List<Color?>> grid = List.generate(
@@ -74,6 +76,14 @@ class GameProvider with ChangeNotifier {
   GameProvider() {
     _loadData();
     _generateNextBlock();
+    _setupNotificationListener();
+  }
+
+  void _setupNotificationListener() {
+    NotificationService().onRewardClaimed = (amount) {
+      addRewardCoins(amount);
+      // You could also show a snackbar or dialog here
+    };
   }
 
   Future<void> _loadData() async {
@@ -212,6 +222,27 @@ class GameProvider with ChangeNotifier {
     showSuccessModal = false;
     _timer?.cancel();
     _saveData();
+
+    // Show notification for high score
+    if (isNewHighScore) {
+      NotificationService().showNotification(
+        id: 1,
+        title: '🔥 New High Score!',
+        body: 'You just set a new record of $highScore points!',
+      );
+    }
+
+    // Schedule a reminder to play again in 24 hours
+    NotificationService().scheduleNotification(
+      id: 2,
+      title: 'Tetris Pro',
+      body: 'Ready to beat your score of $highScore? Play now!',
+      scheduledDate: DateTime.now().add(const Duration(days: 1)),
+    );
+
+    // Refresh long-term retention schedules
+    RetentionService().refreshSchedules();
+
     notifyListeners();
   }
 

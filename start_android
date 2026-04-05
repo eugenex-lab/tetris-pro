@@ -4,12 +4,68 @@
 
 ADB=~/Library/Android/sdk/platform-tools/adb
 EMULATOR=~/Library/Android/sdk/emulator/emulator
-AVD=antigrvity_pixel
+# Determine AVD resolution info (Helper)
+get_resolution() {
+    case "$1" in
+        "galaxy_a03_427x948") echo " (427 x 948 - ~20% Tall Budget)" ;;
+        "narrow_320x480")   echo " (320 x 480 - ~2% Legacy/Tiny)" ;;
+        "phone_360x800")    echo " (360 x 800 - ~60% Standard/Flagship S23/Pixel 7)" ;;
+        "short_360x640")    echo " (360 x 640 - ~10% Old Standard)" ;;
+        "Medium_Tablet")    echo " (~1280 x 800 - ~8% Tablet)" ;;
+        "Pixel_7")          echo " (1080 x 2400 - Modern Tall)" ;;
+        "antigrvity_pixel") echo " (1080 x 1920 - FHD Portrait)" ;;
+        "galaxy_a03")       echo " (720 x 1600 - HD+)" ;;
+        # Support for specific names requested by user
+        *"427x948"*)        echo " (427 x 948 - Tall Budget)" ;;
+        *"320x480"*)        echo " (320 x 480 - Legacy/Tiny)" ;;
+        *"360x800"*)        echo " (360 x 800 - Standard)" ;;
+        *"360x640"*)        echo " (360 x 640 - Old Standard)" ;;
+        *) echo "" ;;
+    esac
+}
 
-# 1. Use Java 17 (modern standard)
+# Determine AVD to use
+WIPE=false
+if [ "$1" == "--wipe" ] || [ "$1" == "-w" ]; then
+    WIPE=true
+    shift
+fi
+
+if [ -n "$1" ]; then
+    AVD=$1
+else
+    echo "📱 Select an emulator to start:"
+    AVDS=($($EMULATOR -list-avds))
+    if [ ${#AVDS[@]} -eq 0 ]; then
+        echo "❌ No Android emulators found! Please create one in Android Studio."
+        exit 1
+    fi
+
+    # Display a numbered list with resolution details
+    for i in "${!AVDS[@]}"; do
+        RES=$(get_resolution "${AVDS[$i]}")
+        printf "  %d) %s%s\n" $((i+1)) "${AVDS[$i]}" "$RES"
+    done
+
+    # Default to the first one but ask for input
+    read -p "Select (1-${#AVDS[@]}) [default: 1]: " choice
+    choice=${choice:-1}
+    
+    # Validate choice
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#AVDS[@]}" ]; then
+        AVD="${AVDS[$((choice-1))]}"
+    else
+        echo "⚠️ Invalid choice, defaulting to ${AVDS[0]}"
+        AVD="${AVDS[0]}"
+    fi
+fi
+
+echo "🚀 Starting AVD: $AVD"
+
+# 1. Use Java 21 (modern LTS standard)
 if [ -f "/usr/libexec/java_home" ]; then
-    export JAVA_HOME=$(/usr/libexec/java_home -v 17)
-    echo "☕ Using JAVA_HOME (Java 17): $JAVA_HOME"
+    export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+    echo "☕ Using JAVA_HOME (Java 21): $JAVA_HOME"
 fi
 
 # 2. Ensure dependencies are up to date
@@ -24,15 +80,56 @@ fi
 
 # 4. Handle Emulator
 echo "📱 Checking for active emulator..."
-EXISTING=$($ADB devices | grep -v "List" | grep "emulator" | head -n 1 | cut -f1)
+EXISTING_ID=$($ADB devices | grep -v "List" | grep "emulator" | head -n 1 | cut -f1)
 
-if [ -z "$EXISTING" ]; then
+SHOULD_START=true
+
+if [ -n "$EXISTING_ID" ]; then
+    # Check if the existing emulator is the right AVD
+    # We clean up the output because adb shell sometimes adds a \r
+    CURRENT_AVD=$($ADB -s "$EXISTING_ID" shell getprop ro.boot.qemu.avd_name | tr -d '\r')
+    
+    if [ "$CURRENT_AVD" == "$AVD" ]; then
+        echo "✅ Using existing $AVD emulator ($EXISTING_ID)"
+        SHOULD_START=false
+    else
+        echo "⚠️  Found running emulator ($CURRENT_AVD) but you requested ($AVD)."
+        read -p "🔄 Would you like to restart the emulator to switch? (y/n) [default: y]: " switch_choice
+        switch_choice=${switch_choice:-y}
+        
+        if [[ "$switch_choice" =~ ^[Yy]$ ]]; then
+            echo "🛑 Stopping $CURRENT_AVD..."
+            $ADB -s "$EXISTING_ID" emu kill
+            sleep 2
+            # Force kill if still there
+            if $ADB devices | grep -q "$EXISTING_ID"; then
+                echo "🔪 Force killing $EXISTING_ID..."
+                pkill -9 "qemu-system-aarch64" 2>/dev/null
+                pkill -9 "qemu-system-x86_64" 2>/dev/null
+            fi
+        else
+            echo "⚠️  Staying on $CURRENT_AVD. (Note: Results might not match your request)"
+            AVD=$CURRENT_AVD
+            SHOULD_START=false
+        fi
+    fi
+fi
+
+if [ "$SHOULD_START" = true ]; then
     echo "✨ Starting $AVD emulator..."
+    WIPE_FLAG=""
+    if [ "$WIPE" = true ]; then
+        echo "🧹 Wiping emulator data for a fresh start..."
+        WIPE_FLAG="-wipe-data"
+    fi
+
     $EMULATOR -avd $AVD \
+        $WIPE_FLAG \
         -netdelay none \
         -netspeed full \
         -dns-server 8.8.8.8,8.8.4.4,1.1.1.1 \
         -gpu host \
+        -no-snapshot-load \
         -no-boot-anim &
     
     echo "⏳ Waiting for emulator to boot..."
@@ -41,18 +138,27 @@ if [ -z "$EXISTING" ]; then
     echo "🛠️ Finalizing boot..."
     until $ADB shell getprop sys.boot_completed | grep -m 1 "1" >/dev/null; do sleep 2; done
 
+    echo "🔓 Unlocking emulator screen..."
+    $ADB shell wm dismiss-keyguard
+    $ADB shell settings put global stay_on_while_plugged_in 3
+
     echo "✅ Emulator is ready!"
-else
-    echo "✅ Using existing emulator: $EXISTING"
 fi
 
-# 5. Fix network (optional)
+# 5. Fix network (ensure fonts can load)
+echo "🌐 Refreshing network settings..."
 $ADB shell settings put global http_proxy :0 >/dev/null 2>&1
 
 # 6. Detect active device
 DEVICE=$($ADB devices | grep "emulator" | head -n 1 | cut -f1)
 
-echo "🎮 Running on $DEVICE..."
+echo "🎮 Running on $DEVICE ($AVD)..."
 
-# 7. Run app
+# 7. Pre-run cleanup to fix 'Error type 3' (only if --wipe is used)
+if [ "$WIPE" = true ]; then
+    echo "🧹 Cleaning up old app installation..."
+    $ADB -s "$DEVICE" uninstall com.eugenexlab.tetrispro >/dev/null 2>&1
+fi
+
+# 8. Run app
 flutter run -d $DEVICE

@@ -8,6 +8,8 @@ import 'package:tetris_pro/services/ad_manager.dart';
 import 'package:tetris_pro/screens/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:tetris_pro/services/notification_service.dart';
+import 'package:tetris_pro/services/retention_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +24,11 @@ void main() async {
   );
   await MobileAds.instance.initialize();
 
-  // Initialize AdManager (after dotenv is loaded)
-  AdManager.instance.initialize();
+  // Initialize NotificationService
+  await NotificationService().init();
+
+  // Refresh retention notifications
+  await RetentionService().refreshSchedules();
 
   runApp(const TetrisProApp());
 }
