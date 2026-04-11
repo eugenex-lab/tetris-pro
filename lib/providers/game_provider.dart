@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import '../core/constants.dart';
 import '../models/block.dart';
 import '../services/notification_service.dart';
@@ -62,6 +63,12 @@ class GameProvider with ChangeNotifier {
   bool hapticsEnabled = true;
   bool isNewHighScore = false;
   bool showTutorial = true;
+  bool hasShownGestureHint = false;
+
+  // Track when game was paused (for resume ad conditions)
+  DateTime? pauseStartTime;
+
+  bool get canWatchRewardedAd => true;
 
   int get linesUntilNextLevel {
     int linesNeeded = 10;
@@ -79,6 +86,12 @@ class GameProvider with ChangeNotifier {
     _setupNotificationListener();
   }
 
+  // Analytics helper
+  void _logEvent(String name, [Map<String, Object>? parameters]) {
+    FirebaseAnalytics.instance.logEvent(name: name, parameters: parameters);
+    debugPrint('Analytics: $name $parameters');
+  }
+
   void _setupNotificationListener() {
     NotificationService().onRewardClaimed = (amount) {
       addRewardCoins(amount);
@@ -93,6 +106,7 @@ class GameProvider with ChangeNotifier {
     showGhostPiece = prefs.getBool('show_ghost_piece') ?? true;
     hapticsEnabled = prefs.getBool('haptics_enabled') ?? true;
     showTutorial = prefs.getBool('show_tutorial') ?? true;
+    // hasShownGestureHint is session only, no longer loaded from prefs
     notifyListeners();
   }
 
@@ -106,12 +120,14 @@ class GameProvider with ChangeNotifier {
     await prefs.setBool('show_ghost_piece', showGhostPiece);
     await prefs.setBool('haptics_enabled', hapticsEnabled);
     await prefs.setBool('show_tutorial', showTutorial);
+    // hasShownGestureHint is no longer saved to prefs
   }
 
   void startGame() {
     _resetGame();
     _spawnBlock();
     _startTimer();
+    _logEvent('game_start');
     notifyListeners();
   }
 
@@ -119,14 +135,33 @@ class GameProvider with ChangeNotifier {
     isPaused = !isPaused;
     if (isPaused) {
       _timer?.cancel();
+      pauseStartTime = DateTime.now();
     } else {
+      pauseStartTime = null;
       _startTimer();
     }
     notifyListeners();
   }
 
   void restartGame() {
+    if (!isGameOver && score > 0) {
+      _logEvent('game_exit', {
+        'score': score,
+        'level': level,
+        'lines': linesClearedTotal,
+      });
+    }
     startGame();
+  }
+
+  void quitGame() {
+    if (!isGameOver && score > 0) {
+      _logEvent('game_exit', {
+        'score': score,
+        'level': level,
+        'lines': linesClearedTotal,
+      });
+    }
   }
 
   void _resetGame() {
@@ -147,6 +182,7 @@ class GameProvider with ChangeNotifier {
     isPaused = false;
     showContinueDialog = false;
     showSuccessModal = false;
+    hasShownGestureHint = false;
     currentBlock = null;
     holdBlock = null;
     canHold = true;
@@ -190,29 +226,35 @@ class GameProvider with ChangeNotifier {
     showContinueDialog = true;
     isPaused = true;
     _timer?.cancel();
+    _logEvent('ad_offer_shown', {'type': 'revive', 'ad_type': 'rewarded'});
     notifyListeners();
   }
 
   // Called after rewarded ad completes
   void continueGame() {
-    if (continuesRemaining > 0) {
-      continuesRemaining--;
-      showContinueDialog = false;
+    int rowsToClear = (AppConstants.gridRows * 0.30).round(); // 30% of board
 
-      // Clear bottom 4 rows for breathing room
-      for (
-        int r = AppConstants.gridRows - 1;
-        r >= AppConstants.gridRows - 4;
-        r--
-      ) {
-        grid[r] = List.filled(AppConstants.gridColumns, null);
-      }
-
-      isPaused = false;
-      _spawnBlock();
-      _startTimer();
-      notifyListeners();
+    // Clear bottom rows for breathing room
+    for (
+      int r = AppConstants.gridRows - 1;
+      r >= AppConstants.gridRows - rowsToClear;
+      r--
+    ) {
+      grid[r] = List.filled(AppConstants.gridColumns, null);
     }
+
+    // Shift everything down so the top clears up
+    for (int r = AppConstants.gridRows - rowsToClear - 1; r >= 0; r--) {
+      grid[r + rowsToClear] = List.from(grid[r]);
+      grid[r] = List.filled(AppConstants.gridColumns, null);
+    }
+
+    showContinueDialog = false;
+    isGameOver = false;
+    _spawnBlock();
+    _startTimer();
+    _logEvent('revive_used', {'type': 'ad'});
+    notifyListeners();
   }
 
   // Called when player gives up or runs out of continues
@@ -242,6 +284,15 @@ class GameProvider with ChangeNotifier {
 
     // Refresh long-term retention schedules
     RetentionService().refreshSchedules();
+
+    _logEvent('game_over', {
+      'score': score,
+      'level': level,
+      'high_score': highScore,
+      'is_new_high_score': isNewHighScore ? 1 : 0,
+      'coins_balance': coins,
+      'lines_cleared': linesClearedTotal,
+    });
 
     notifyListeners();
   }
@@ -285,6 +336,13 @@ class GameProvider with ChangeNotifier {
   void completeTutorial() {
     showTutorial = false;
     _saveData();
+    _logEvent('tutorial_complete');
+    notifyListeners();
+  }
+
+  void markGestureHintShown() {
+    hasShownGestureHint = true;
+    _saveData();
     notifyListeners();
   }
 
@@ -294,27 +352,42 @@ class GameProvider with ChangeNotifier {
     showGhostPiece = true;
     hapticsEnabled = true;
     showTutorial = true;
+    hasShownGestureHint = false;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear(); // Reset everything
     _resetGame();
+    _logEvent('reset_progress');
     notifyListeners();
   }
 
   // Legacy revive method for coin-based revive (keep for backwards compatibility)
   void revive() {
-    if (coins >= 5) {
-      coins -= 5;
+    if (coins >= 100) {
+      coins -= 100;
+      _logEvent('revive_used', {'type': 'coins'});
+      _logEvent('coins_spent', {'amount': 100, 'purpose': 'revive'});
       continueGame();
       _saveData();
+    } else {
+      _logEvent('out_of_coins', {
+        'action': 'revive',
+        'required': 100,
+        'balance': coins,
+      });
     }
   }
 
   // Called when player watches an ad to earn coins
   void addRewardCoins(int amount) {
     coins += amount;
+    _logEvent('coins_earned', {'amount': amount, 'source': 'reward_ad'});
     _saveData();
     notifyListeners();
+  }
+
+  void recordRewardedAdUse() {
+    // No-op - limits removed
   }
 
   void _startTimer() {
@@ -403,10 +476,10 @@ class GameProvider with ChangeNotifier {
 
   void dropBlock() {
     if (currentBlock == null || isPaused || isGameOver) return;
-    
+
     // Prevent rapid consecutive drops
     final now = DateTime.now();
-    if (_lastDropTime != null && 
+    if (_lastDropTime != null &&
         now.difference(_lastDropTime!).inMilliseconds < 500) {
       return;
     }
@@ -485,13 +558,13 @@ class GameProvider with ChangeNotifier {
           earned = 0;
           break;
         case 2:
-          earned = 1;
+          earned = 2; // Increased from 1
           break;
         case 3:
-          earned = 3;
+          earned = 5; // Increased from 3
           break;
         case 4:
-          earned = 5;
+          earned = 10; // Increased from 5
           break;
       }
 
@@ -506,6 +579,8 @@ class GameProvider with ChangeNotifier {
         showSuccessModal = true;
         isPaused = true;
         _timer?.cancel();
+
+        _logEvent('level_up', {'level': level});
 
         // Trigger level start animation callback
         onLevelStart?.call();
@@ -531,8 +606,18 @@ class GameProvider with ChangeNotifier {
       }
       score += points * level;
 
+      _logEvent('line_clear', {
+        'lines': linesCleared,
+        'points': points * level,
+        'level': level,
+      });
+
       coins += earned;
       levelCoins += earned;
+
+      if (earned > 0) {
+        _logEvent('coins_earned', {'amount': earned, 'source': 'line_clear'});
+      }
 
       if (score > highScore) {
         isNewHighScore = true;

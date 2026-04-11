@@ -124,7 +124,7 @@ class SettingsScreen extends StatelessWidget {
                           label: "RESET PROGRESS",
                           icon: FontAwesomeIcons.trashCan,
                           onPressed: () => _showResetConfirmation(context),
-                          color: Colors.red.withOpacity(0.7),
+                          color: Colors.red.withValues(alpha: 0.7),
                         ),
 
                         const SizedBox(height: 16),
@@ -161,7 +161,7 @@ class SettingsScreen extends StatelessWidget {
       child: Text(
         title,
         style: TextStyle(
-          color: const Color(0xFF5D4037).withOpacity(0.8),
+          color: const Color(0xFF5D4037).withValues(alpha: 0.8),
           fontSize: 11,
           fontWeight: FontWeight.w900,
           letterSpacing: 2,
@@ -243,7 +243,7 @@ class _SettingsCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFC4B59D), width: 3),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             offset: const Offset(0, 10),
             blurRadius: 20,
           ),
@@ -347,7 +347,7 @@ class _LargeButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               offset: const Offset(0, 4),
               blurRadius: 4,
             ),

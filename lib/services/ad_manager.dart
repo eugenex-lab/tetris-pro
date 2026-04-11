@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:tetris_pro/core/app_theme.dart';
 
 enum AdBannerType { home, game }
@@ -21,6 +22,8 @@ class AdManager {
 
   DateTime? _appPausedTime;
   bool _isShowingAd = false;
+
+  // Interstitial ad management (limits removed)
   StreamSubscription? _connectivitySubscription;
 
   // Offline tracking
@@ -54,6 +57,18 @@ class AdManager {
   static String get _nativeAdUnitId => Platform.isAndroid
       ? dotenv.env['ADMOB_NATIVE_ANDROID']!
       : dotenv.env['ADMOB_NATIVE_IOS']!;
+
+  // Helpers for Analytics
+  void _logAdEvent(String eventName, String adType) {
+    FirebaseAnalytics.instance.logEvent(
+      name: eventName,
+      parameters: {
+        'ad_type': adType,
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
+    debugPrint('Analytics: $eventName ($adType)');
+  }
 
   // Initialize all ads
   void initialize() {
@@ -131,6 +146,15 @@ class AdManager {
     _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         debugPrint('App Open ad showed');
+        _logAdEvent('ad_show', 'app_open');
+      },
+      onAdClicked: (ad) {
+        debugPrint('App Open ad clicked');
+        _logAdEvent('ad_click', 'app_open');
+      },
+      onAdImpression: (ad) {
+        debugPrint('App Open ad impression');
+        _logAdEvent('ad_impression', 'app_open');
       },
       onAdDismissedFullScreenContent: (ad) {
         debugPrint('App Open ad dismissed');
@@ -151,6 +175,18 @@ class AdManager {
     );
 
     _appOpenAd!.show();
+  }
+
+  // ==================== INTERSTITIAL AD MANAGEMENT ====================
+
+  /// Whether an interstitial can show on Game Over (Always returns true).
+  bool canShowGameOverAd() {
+    return true;
+  }
+
+  /// Whether an interstitial can show on Resume (Always returns true).
+  bool canShowResumeAd({required DateTime? pauseTime}) {
+    return true;
   }
 
   // ==================== INTERSTITIAL AD ====================
@@ -182,6 +218,15 @@ class AdManager {
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         debugPrint('Interstitial ad showed');
+        _logAdEvent('ad_show', 'interstitial');
+      },
+      onAdClicked: (ad) {
+        debugPrint('Interstitial ad clicked');
+        _logAdEvent('ad_click', 'interstitial');
+      },
+      onAdImpression: (ad) {
+        debugPrint('Interstitial ad impression');
+        _logAdEvent('ad_impression', 'interstitial');
       },
       onAdDismissedFullScreenContent: (ad) {
         debugPrint('Interstitial ad dismissed');
@@ -236,6 +281,15 @@ class AdManager {
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         debugPrint('Rewarded ad showed');
+        _logAdEvent('ad_show', 'rewarded');
+      },
+      onAdClicked: (ad) {
+        debugPrint('Rewarded ad clicked');
+        _logAdEvent('ad_click', 'rewarded');
+      },
+      onAdImpression: (ad) {
+        debugPrint('Rewarded ad impression');
+        _logAdEvent('ad_impression', 'rewarded');
       },
       onAdDismissedFullScreenContent: (ad) {
         debugPrint('Rewarded ad dismissed');
@@ -260,6 +314,7 @@ class AdManager {
     _rewardedAd!.show(
       onUserEarnedReward: (ad, reward) {
         debugPrint('User earned reward: ${reward.amount} ${reward.type}');
+        _logAdEvent('ad_reward_earned', 'rewarded');
         rewardEarned = true;
       },
     );
@@ -274,6 +329,18 @@ class AdManager {
       listener: NativeAdListener(
         onAdLoaded: (ad) {
           debugPrint('Native ad loaded');
+        },
+        onAdOpened: (ad) {
+          debugPrint('Native ad opened');
+          AdManager.instance._logAdEvent('ad_open', 'native');
+        },
+        onAdClicked: (ad) {
+          debugPrint('Native ad clicked');
+          AdManager.instance._logAdEvent('ad_click', 'native');
+        },
+        onAdImpression: (ad) {
+          debugPrint('Native ad impression');
+          AdManager.instance._logAdEvent('ad_impression', 'native');
         },
         onAdFailedToLoad: (ad, error) {
           debugPrint('Native ad failed to load: $error');
@@ -341,6 +408,18 @@ class _BannerAdWidgetState extends State<_BannerAdWidget> {
               AdManager.instance.isOffline.value = false;
             });
           }
+        },
+        onAdOpened: (ad) {
+          debugPrint('Banner ad opened');
+          AdManager.instance._logAdEvent('ad_open', 'banner');
+        },
+        onAdClicked: (ad) {
+          debugPrint('Banner ad clicked');
+          AdManager.instance._logAdEvent('ad_click', 'banner');
+        },
+        onAdImpression: (ad) {
+          debugPrint('Banner ad impression');
+          AdManager.instance._logAdEvent('ad_impression', 'banner');
         },
         onAdFailedToLoad: (ad, error) {
           debugPrint('Banner ad failed to load: $error');

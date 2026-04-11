@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tetris_pro/core/app_theme.dart';
 import 'package:tetris_pro/core/constants.dart';
 import 'package:tetris_pro/providers/game_provider.dart';
 
@@ -14,7 +13,7 @@ class GameBoard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.black26, // Slightly clearer background to see grid
-          border: Border.all(color: AppTheme.woodLight, width: 4),
+          border: Border.all(color: const Color(0xFFFFB74D), width: 2.4),
           borderRadius: BorderRadius.circular(8),
           image: const DecorationImage(
             image: NetworkImage(

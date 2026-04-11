@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "112090333180",
+    "project_id": "tetris-pro-da0e8",
+    "storage_bucket": "tetris-pro-da0e8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:112090333180:android:f775b0a01affa85142fc79",
+        "android_client_info": {
+          "package_name": "com.eugenexlab.tetrispro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJp0tVLt5seVKfjVtxek6o-jb1tKSOG8s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -351,9 +351,7 @@ class HomeScreen extends StatelessWidget {
       height: 80,
       decoration: BoxDecoration(
         color: const Color(0xFF3E2723), // Darker wood for plaque look
-        // Remove border radius to make it look like a cut piece of wood? Or smaller radius.
-        // User wants it to look like a label, so flat or inset.
-        // Let's try a distinct shape or just darkened background without big elevation.
+        borderRadius: BorderRadius.circular(16),
         image: const DecorationImage(
           image: NetworkImage(
             'https://www.transparenttextures.com/patterns/wood-pattern.png',

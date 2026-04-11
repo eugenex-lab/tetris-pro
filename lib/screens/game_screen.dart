@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:tetris_pro/core/app_theme.dart';
 import 'package:tetris_pro/providers/game_provider.dart';
 import 'package:tetris_pro/providers/audio_provider.dart';
@@ -37,20 +38,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   static const double _verticalThreshold = 25.0;
 
   // Hint system
-  Timer? _hintTimer;
   Timer? _idleTimer;
   static const int _idleTimeoutSeconds = 10;
-  String? _currentHint;
-  bool _showHint = false;
   bool _showGestureHint = false;
-  final List<String> _hints = [
-    "Tap anywhere to rotate the piece!",
-    "Swipe DOWN to drop faster (Soft Drop)!",
-    "FLICK DOWN FAST for instant drop (Hard Drop)!",
-    "Use the HOLD box to save a piece for later!",
-    "Clear 4 lines at once for a TETRIS bonus!",
-    "Watch the GHOST piece to see where it lands!",
-  ];
 
   @override
   void initState() {
@@ -133,8 +123,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         game.startGame();
         _resetIdleTimer();
       }
-
-      _startHintTimer();
     });
   }
 
@@ -142,7 +130,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _focusNode.dispose();
-    _hintTimer?.cancel();
     _idleTimer?.cancel();
     super.dispose();
   }
@@ -162,6 +149,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _resetIdleTimer() {
     _idleTimer?.cancel();
+    if (context.read<GameProvider>().hasShownGestureHint) return;
+
     _idleTimer = Timer(Duration(seconds: _idleTimeoutSeconds), () {
       if (mounted &&
           !context.read<GameProvider>().isPaused &&
@@ -169,32 +158,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         setState(() {
           _showGestureHint = true;
         });
-      }
-    });
-  }
-
-  void _startHintTimer() {
-    _hintTimer?.cancel();
-    _hintTimer = Timer.periodic(const Duration(seconds: 45), (timer) {
-      if (mounted &&
-          !context.read<GameProvider>().isPaused &&
-          !context.read<GameProvider>().isGameOver) {
-        _showRandomHint();
-      }
-    });
-  }
-
-  void _showRandomHint() {
-    setState(() {
-      _currentHint = _hints[Random().nextInt(_hints.length)];
-      _showHint = true;
-    });
-
-    Future.delayed(const Duration(seconds: 6), () {
-      if (mounted) {
-        setState(() {
-          _showHint = false;
-        });
+        context.read<GameProvider>().markGestureHintShown();
       }
     });
   }
@@ -215,7 +179,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 120),
+                const Spacer(flex: 3),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -271,8 +235,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 const SizedBox(height: 48),
                 Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                        horizontal: 16,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.black54,
@@ -284,19 +248,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                       child: Column(
                         children: [
                           Text(
-                            "SWIPE ANYWHERE TO MOVE",
+                            "SWIPE LEFT / RIGHT",
+                            textAlign: TextAlign.center,
                             style: AppTheme.titleStyle.copyWith(
                               color: const Color(0xFFFFD54F),
-                              fontSize: 18,
-                              letterSpacing: 2,
+                              fontSize: 14,
+                              letterSpacing: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
                           const Text(
-                            "FLICK DOWN FAST TO DROP",
+                            "FLICK DOWN TO DROP",
                             style: TextStyle(
                               color: Colors.white70,
-                              fontSize: 14,
+                              fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -306,6 +271,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     .animate()
                     .fadeIn(delay: 500.ms)
                     .scale(duration: 500.ms, curve: Curves.easeOutBack),
+                const Spacer(flex: 2),
               ],
             ),
           ),
@@ -313,8 +279,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ),
     );
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -367,8 +331,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                         context.read<AudioProvider>().playSoundEffect(
                           SoundEffect.rotate,
                         );
-                        if (game.hapticsEnabled)
+                        if (game.hapticsEnabled) {
                           HapticFeedback.selectionClick();
+                        }
                         game.rotateBlock();
                       },
                       onHorizontalDragStart: (_) => _horizontalDragDist = 0,
@@ -381,14 +346,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                         }
 
                         _horizontalDragDist += details.delta.dx;
+                        context.read<GameProvider>().markGestureHintShown();
 
                         // Sensitivity threshold
                         while (_horizontalDragDist > _horizontalThreshold) {
                           context.read<AudioProvider>().playSoundEffect(
                             SoundEffect.rotate,
                           ); // Using rotate sound for moves if specific move sound missing
-                          if (game.hapticsEnabled)
+                          if (game.hapticsEnabled) {
                             HapticFeedback.selectionClick();
+                          }
                           game.moveRight();
                           _horizontalDragDist -= _horizontalThreshold;
                         }
@@ -396,8 +363,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                           context.read<AudioProvider>().playSoundEffect(
                             SoundEffect.rotate,
                           );
-                          if (game.hapticsEnabled)
+                          if (game.hapticsEnabled) {
                             HapticFeedback.selectionClick();
+                          }
                           game.moveLeft();
                           _horizontalDragDist += _horizontalThreshold;
                         }
@@ -465,73 +433,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               ),
 
             // Gesture Hint Overlay
-            if (_showGestureHint) _buildGestureHint(),
+            if (_showGestureHint && !game.isPaused && !game.isGameOver) 
+              _buildGestureHint(),
 
             // Line clear animation
             if (_showLineClearAnimation) _buildLineClearAnimation(),
 
             // Level start animation
             if (_showLevelStartAnimation) _buildLevelStartAnimation(),
-
-            // Hint Overlay
-            if (_showHint && _currentHint != null)
-              Positioned(
-                bottom: 120,
-                left: 20,
-                right: 20,
-                child: Center(
-                  child:
-                      Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(
-                                color: const Color(
-                                  0xFFFFD54F,
-                                ).withValues(alpha: 0.4),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  FontAwesomeIcons.lightbulb,
-                                  color: Color(0xFFFFD54F),
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 12),
-                                Flexible(
-                                  child: Text(
-                                    _currentHint!,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                          .animate()
-                          .scale(duration: 400.ms, curve: Curves.easeOutBack)
-                          .fadeIn()
-                          .then(delay: 5.seconds)
-                          .fadeOut(),
-                ),
-              ),
           ],
         ),
       ),
@@ -540,7 +449,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   Widget _buildHUD(GameProvider game) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -608,36 +517,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           // Center: NEXT PIECE (Hero Element)
           _buildNextDisplay(game.nextBlock),
 
-          // Right: Coins & Pause
+          // Right: Pause Button
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildHUDStat(
-                  "BEST",
-                  "${game.highScore}",
-                  CrossAxisAlignment.end,
-                  fontSize: 14,
-                  labelSize: 8,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    _buildHUDStat(
-                      "COINS",
-                      "${game.coins}",
-                      CrossAxisAlignment.end,
-                      icon: FontAwesomeIcons.coins,
-                      fontSize: 14,
-                      labelSize: 8,
-                    ),
-                    const SizedBox(width: 12),
-                    _buildPauseBtn(game),
-                  ],
-                ),
-              ],
+            child: Center(
+              child: _buildPauseBtn(game),
             ),
           ),
         ],
@@ -647,9 +530,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   Widget _buildNextDisplay(dynamic block) {
     return Container(
-      width: 120,
-      height: 90,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
+      width: 100,
+      height: 75,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(24),
@@ -729,8 +612,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         game.pauseGame();
       },
       child: Container(
-        width: 44,
-        height: 44,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
           color: const Color(0xFF3E2723).withValues(alpha: 0.8),
           shape: BoxShape.circle,
@@ -746,7 +629,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         child: Icon(
           game.isPaused ? Icons.play_arrow : Icons.pause,
           color: const Color(0xFFFFD54F),
-          size: 20,
+          size: 24,
         ),
       ),
     );
@@ -770,11 +653,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         fontWeight: FontWeight.bold,
         fontFamily: 'monospace',
         shadows: const [
-          Shadow(
-            color: Colors.black87,
-            blurRadius: 4,
-            offset: Offset(1, 1),
-          ),
+          Shadow(color: Colors.black87, blurRadius: 4, offset: Offset(1, 1)),
         ],
       ),
     );
@@ -890,9 +769,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                         context.read<AudioProvider>().playSoundEffect(
                           SoundEffect.buttonClick,
                         );
-                        AdManager.instance.showInterstitialAd(
-                          onAdClosed: () => game.pauseGame(),
-                        );
+                        if (AdManager.instance.canShowResumeAd(
+                          pauseTime: game.pauseStartTime,
+                        )) {
+                          AdManager.instance.showInterstitialAd(
+                            onAdClosed: () => game.pauseGame(),
+                          );
+                        } else {
+                          game.pauseGame();
+                        }
                       },
                       color: AppTheme.woodLight,
                     ),
@@ -924,9 +809,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                               context.read<AudioProvider>().playSoundEffect(
                                 SoundEffect.buttonClick,
                               );
-                              AdManager.instance.showInterstitialAd(
-                                onAdClosed: () => game.restartGame(),
-                              );
+                              if (AdManager.instance.canShowGameOverAd()) {
+                                AdManager.instance.showInterstitialAd(
+                                  onAdClosed: () => game.restartGame(),
+                                );
+                              } else {
+                                game.restartGame();
+                              }
                             },
                             color: const Color(0xFF8D6E63),
                           ),
@@ -940,9 +829,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                               context.read<AudioProvider>().playSoundEffect(
                                 SoundEffect.buttonClick,
                               );
-                              AdManager.instance.showInterstitialAd(
-                                onAdClosed: () => Navigator.pop(context),
-                              );
+                              game.quitGame();
+                              if (AdManager.instance.canShowGameOverAd()) {
+                                AdManager.instance.showInterstitialAd(
+                                  onAdClosed: () => Navigator.pop(context),
+                                );
+                              } else {
+                                Navigator.pop(context);
+                              }
                             },
                             color: const Color(0xFF795548),
                           ),
@@ -999,14 +893,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     ),
                     const SizedBox(height: 24),
                     _LargeMenuButton(
-                      label: "WATCH AD",
+                      label: "Revive (Ad)",
                       icon: FontAwesomeIcons.video,
                       onPressed: () {
                         context.read<AudioProvider>().playSoundEffect(
                           SoundEffect.buttonClick,
                         );
+                        FirebaseAnalytics.instance.logEvent(
+                          name: 'ad_offer_clicked',
+                          parameters: {'type': 'revive', 'ad_type': 'rewarded'},
+                        );
                         AdManager.instance.showRewardedAd(
                           onRewarded: () {
+                            game.recordRewardedAdUse();
                             game.continueGame();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -1026,6 +925,47 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                         );
                       },
                       color: Colors.green.withValues(alpha: 0.8),
+                    ),
+                    const SizedBox(height: 12),
+                    _LargeMenuButton(
+                      label: "Revive (100 Coins)",
+                      icon: FontAwesomeIcons.coins,
+                      onPressed: () {
+                        if (game.coins < 100) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("NOT ENOUGH COINS!"),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                        context.read<AudioProvider>().playSoundEffect(
+                          SoundEffect.buttonClick,
+                        );
+                        FirebaseAnalytics.instance.logEvent(
+                          name: 'ad_offer_clicked',
+                          parameters: {'type': 'revive', 'ad_type': 'coins'},
+                        );
+                        game.revive();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "CONTINUED WITH COINS!",
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            duration: Duration(seconds: 1),
+                            backgroundColor: Colors.amber,
+                          ),
+                        );
+                      },
+                      color: game.coins >= 100
+                          ? const Color(0xFFD84315).withValues(alpha: 0.8)
+                          : Colors.grey.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 16),
                     TextButton(
@@ -1058,46 +998,324 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   Widget _buildGameOverOverlay(BuildContext context, GameProvider game) {
     return Container(
-      color: Colors.black.withValues(alpha: 0.85),
+      color: Colors.black.withValues(alpha: 0.88),
       child: Center(
         child: _MenuCard(
           title: "GAME OVER",
           titleColor: Colors.redAccent,
           children: [
-            const SizedBox(height: 10),
-            // Stat Grid - Score and Level on one line
+            const SizedBox(height: 16),
+
+            // ── Premium Score / Level Panel ──
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.05),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [const Color(0xFF1A1208), const Color(0xFF2D1F0A)],
+                ),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                border: Border.all(
+                  color: const Color(0xFFFFD54F).withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              child: Column(
                 children: [
-                  _buildGameOverStat(
+                  // NEW RECORD banner
+                  if (game.isNewHighScore)
+                    Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFFFFD54F,
+                                ).withValues(alpha: 0.5),
+                                blurRadius: 16,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text("🏆", style: TextStyle(fontSize: 14)),
+                              SizedBox(width: 6),
+                              Text(
+                                "NEW RECORD!",
+                                style: TextStyle(
+                                  color: Color(0xFF3E2723),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              SizedBox(width: 6),
+                              Text("🏆", style: TextStyle(fontSize: 14)),
+                            ],
+                          ),
+                        )
+                        .animate(onPlay: (c) => c.repeat())
+                        .shimmer(duration: 1.2.seconds, color: Colors.white38)
+                        .scale(
+                          begin: const Offset(0.95, 0.95),
+                          end: const Offset(1.05, 1.05),
+                          duration: 900.ms,
+                          curve: Curves.easeInOut,
+                        ),
+
+                  // Score — hero number
+                  Text(
                     "SCORE",
-                    "${game.score}",
-                    false,
-                    isHighlight: game.isNewHighScore,
-                    isNewBest: game.isNewHighScore,
-                  ).animate().fadeIn(delay: 200.ms),
-                  Container(width: 1, height: 30, color: Colors.black12),
-                  _buildGameOverStat(
-                    "LEVEL REACHED",
-                    "${game.level}",
-                    false,
-                  ).animate().fadeIn(delay: 400.ms),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 3,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                        "${game.score}",
+                        style: TextStyle(
+                          color: const Color(0xFFFFD54F),
+                          fontSize: 56,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'monospace',
+                          shadows: [
+                            Shadow(
+                              color: const Color(
+                                0xFFFFD54F,
+                              ).withValues(alpha: 0.6),
+                              blurRadius: 20,
+                            ),
+                            const Shadow(
+                              color: Colors.black,
+                              blurRadius: 6,
+                              offset: Offset(2, 2),
+                            ),
+                          ],
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 300.ms)
+                      .scale(
+                        begin: const Offset(0.7, 0.7),
+                        duration: 400.ms,
+                        curve: Curves.easeOutBack,
+                      )
+                      .shimmer(
+                        delay: 400.ms,
+                        duration: 800.ms,
+                        color: Colors.white24,
+                      ),
+
+                  const SizedBox(height: 16),
+
+                  // Divider
+                  Container(
+                    height: 1,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          const Color(0xFFFFD54F).withValues(alpha: 0.3),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Level badge
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
+                              ),
+                              border: Border.all(
+                                color: const Color(0xFFFFB74D),
+                                width: 2.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFFFB74D,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 12,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "LVL",
+                                    style: TextStyle(
+                                      color: const Color(
+                                        0xFFFFB74D,
+                                      ).withValues(alpha: 0.7),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.5,
+                                    ),
+                                  ),
+                                  Text(
+                                    "${game.level}",
+                                    style: const TextStyle(
+                                      color: Color(0xFFFFD54F),
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                      height: 1.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .animate()
+                          .fadeIn(delay: 300.ms)
+                          .scale(
+                            begin: const Offset(0, 0),
+                            duration: 500.ms,
+                            curve: Curves.easeOutBack,
+                          ),
+                      const SizedBox(width: 24),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "LEVEL REACHED",
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.4),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            game.level == 1
+                                ? "KEEP GOING!"
+                                : game.level < 5
+                                ? "NICE EFFORT!"
+                                : game.level < 10
+                                ? "GREAT GAME!"
+                                : "LEGEND! 🔥",
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.3),
+                    ],
+                  ),
                 ],
               ),
-            ),
+            ).animate().fadeIn(delay: 200.ms),
 
-            const SizedBox(height: 24),
-            // Watch Ad for Coins Banner
-            _buildCoinAdBanner(context, game).animate().fadeIn(delay: 900.ms),
+            const SizedBox(height: 20),
 
-            // Action Buttons - Stacked and Full-Width to match other sections
+            // Watch Ad to Continue Button
+            _LargeMenuButton(
+              label: "Revive (Ad)",
+              icon: FontAwesomeIcons.video,
+              onPressed: () {
+                context.read<AudioProvider>().playSoundEffect(
+                  SoundEffect.buttonClick,
+                );
+                AdManager.instance.showRewardedAd(
+                  onRewarded: () {
+                    game.recordRewardedAdUse();
+                    game.continueGame();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "CONTINUE!",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        duration: Duration(seconds: 1),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  },
+                );
+              },
+              color: game.canWatchRewardedAd
+                  ? Colors.green.withValues(alpha: 0.8)
+                  : Colors.grey.withValues(alpha: 0.5),
+            ).animate().fadeIn(delay: 900.ms),
+
+            const SizedBox(height: 12),
+
+            // Use Coins to Continue Button
+            _LargeMenuButton(
+              label: "Revive (100 Coins)",
+              icon: FontAwesomeIcons.coins,
+              onPressed: () {
+                if (game.coins < 100) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("NOT ENOUGH COINS!"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                context.read<AudioProvider>().playSoundEffect(
+                  SoundEffect.buttonClick,
+                );
+                game.revive(); // revive() consumes 100 coins and calls continueGame()
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "CONTINUED WITH COINS!",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    duration: Duration(seconds: 1),
+                    backgroundColor: Colors.amber,
+                  ),
+                );
+              },
+              color: game.coins >= 100
+                  ? const Color(0xFFD84315).withValues(alpha: 0.8) // Vibrant Orange
+                  : Colors.grey.withValues(alpha: 0.5),
+            ).animate().fadeIn(delay: 1000.ms),
+
+            const SizedBox(height: 12),
+
+            // Action Buttons
             Column(
               children: [
                 _LargeMenuButton(
@@ -1107,9 +1325,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     context.read<AudioProvider>().playSoundEffect(
                       SoundEffect.buttonClick,
                     );
-                    AdManager.instance.showInterstitialAd(
-                      onAdClosed: () => game.restartGame(),
-                    );
+                    if (AdManager.instance.canShowGameOverAd()) {
+                      AdManager.instance.showInterstitialAd(
+                        onAdClosed: () => game.restartGame(),
+                      );
+                    } else {
+                      game.restartGame();
+                    }
                   },
                   color: AppTheme.woodLight,
                 ),
@@ -1121,9 +1343,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     context.read<AudioProvider>().playSoundEffect(
                       SoundEffect.buttonClick,
                     );
-                    AdManager.instance.showInterstitialAd(
-                      onAdClosed: () => Navigator.pop(context),
-                    );
+                    if (AdManager.instance.canShowGameOverAd()) {
+                      AdManager.instance.showInterstitialAd(
+                        onAdClosed: () => Navigator.pop(context),
+                      );
+                    } else {
+                      Navigator.pop(context);
+                    }
                   },
                   color: const Color(0xFF8D6E63),
                 ),
@@ -1132,180 +1358,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           ],
         ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
       ),
-    );
-  }
-
-  Widget _buildGameOverStat(
-    String label,
-    String value,
-    bool primary, {
-    bool isHighlight = false,
-    bool isNewBest = false,
-  }) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (isNewBest)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            margin: const EdgeInsets.only(bottom: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD54F),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Text(
-              "NEW BEST!",
-              style: TextStyle(
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF3E2723),
-              ),
-            ),
-          ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 1.seconds),
-
-        Text(
-          label,
-          style: AppTheme.bodyStyle.copyWith(
-            fontSize: primary ? 12 : 10,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-            color: isHighlight
-                ? const Color(0xFFD84315)
-                : const Color(0xFF5D4037).withValues(alpha: 0.8),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-              value,
-              style: AppTheme.titleStyle.copyWith(
-                fontSize: primary ? 48 : 36,
-                color: isHighlight
-                    ? const Color(0xFFD84315)
-                    : const Color(0xFF3E2723),
-                height: 1.1,
-              ),
-            )
-            .animate(target: isNewBest ? 1 : 0)
-            .shimmer(duration: 2.seconds, color: Colors.white54),
-      ],
-    );
-  }
-
-  Widget _buildCoinAdBanner(BuildContext context, GameProvider game) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: AdManager.instance.isOffline,
-      builder: (context, isOffline, child) {
-        if (isOffline) return const SizedBox.shrink();
-
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            children: [
-              Text(
-                "NEED MORE COINS?",
-                style: TextStyle(
-                  color: const Color(0xFF5D4037).withValues(alpha: 0.6),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () {
-                  context.read<AudioProvider>().playSoundEffect(
-                    SoundEffect.buttonClick,
-                  );
-                  AdManager.instance.showRewardedAd(
-                    onRewarded: () => game.addRewardCoins(5),
-                  );
-                },
-                child: Container(
-                  width: 280,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFFA000).withValues(alpha: 0.4),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                      BoxShadow(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        blurRadius: 0,
-                        spreadRadius: 1,
-                        offset: const Offset(0, -1),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                            FontAwesomeIcons.circlePlay,
-                            color: Color(0xFF3E2723),
-                            size: 20,
-                          )
-                          .animate(onPlay: (c) => c.repeat())
-                          .scale(
-                            duration: 1.seconds,
-                            begin: const Offset(1, 1),
-                            end: const Offset(1.2, 1.2),
-                            curve: Curves.easeInOut,
-                          ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "WATCH TO EARN",
-                            style: TextStyle(
-                              color: Color(0xFF3E2723),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 11,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          Text(
-                            "+5 COINS",
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      const Icon(
-                        FontAwesomeIcons.coins,
-                        color: Color(0xFF3E2723),
-                        size: 24,
-                      ).animate(onPlay: (c) => c.repeat()).shimmer(
-                        delay: 2.seconds,
-                        duration: 1.5.seconds,
-                      ),
-                    ],
-                  ),
-                ),
-              ).animate(onPlay: (c) => c.repeat()).shimmer(
-                delay: 3.seconds,
-                duration: 2.seconds,
-                color: Colors.white24,
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -1341,18 +1393,21 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 ...List.generate(8, (i) {
                   final angle = (i * 45) * (pi / 180);
                   return Transform.translate(
-                    offset: Offset(cos(angle) * 70, sin(angle) * 70),
-                    child: const Icon(
-                      FontAwesomeIcons.star,
-                      color: Color(0xFFFFD54F),
-                      size: 12,
-                    ),
-                  ).animate(onPlay: (c) => c.repeat()).scale(
+                        offset: Offset(cos(angle) * 70, sin(angle) * 70),
+                        child: const Icon(
+                          FontAwesomeIcons.star,
+                          color: Color(0xFFFFD54F),
+                          size: 12,
+                        ),
+                      )
+                      .animate(onPlay: (c) => c.repeat())
+                      .scale(
                         duration: (800 + (i * 100)).ms,
                         begin: const Offset(0, 0),
                         end: const Offset(1.5, 1.5),
                         curve: Curves.easeOutBack,
-                      ).fadeOut();
+                      )
+                      .fadeOut();
                 }),
               ],
             ),
