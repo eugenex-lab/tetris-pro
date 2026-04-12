@@ -38,8 +38,8 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="eugenex-lab.github.io" android:pathPrefix="/tetris-pro" />
-                <data android:scheme="https" android:host="eugenex-lab.github.io" android:pathPrefix="/tetris-pro" />
+                <data android:scheme="http" android:host="tetris-pro-six.vercel.app" />
+                <data android:scheme="https" android:host="tetris-pro-six.vercel.app" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
